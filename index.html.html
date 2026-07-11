@@ -191,6 +191,8 @@ button{font-family:inherit;cursor:pointer;border:none;}
   animation:fadeInUp 1s var(--ease) .1s both;
 }
 .hero-badge .dot{width:7px;height:7px;border-radius:50%;background:#25D366;animation:pulseDot 1.6s infinite;}
+.hero-badge .dot.closed{background:var(--red);animation:pulseDotRed 1.6s infinite;}
+@keyframes pulseDotRed{0%,100%{box-shadow:0 0 0 0 rgba(230,57,70,.6);}50%{box-shadow:0 0 0 6px rgba(230,57,70,0);}}
 @keyframes pulseDot{0%,100%{box-shadow:0 0 0 0 rgba(37,211,102,.6);}50%{box-shadow:0 0 0 6px rgba(37,211,102,0);}}
 .hero h1{
   font-size:clamp(42px,7.4vw,96px);
@@ -212,7 +214,7 @@ button{font-family:inherit;cursor:pointer;border:none;}
   animation:fadeInUp 1s var(--ease) .55s both;
 }
 .hero-actions{
-  display:flex;gap:18px;margin-top:42px;flex-wrap:wrap;
+  display:flex;gap:18px;margin-top:42px;flex-wrap:wrap;justify-content:center;
   animation:fadeInUp 1s var(--ease) .7s both;
 }
 @keyframes fadeInUp{from{opacity:0;transform:translateY(28px);}to{opacity:1;transform:translateY(0);}}
@@ -766,16 +768,15 @@ a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visib
   <div class="hero-glow"></div>
   <div class="embers" id="embers"></div>
   <div class="container hero-inner">
-    <div class="hero-badge"><span class="dot"></span> Abierto ahora · Pedí y retirá en 20 min</div>
+    <div class="hero-badge" id="heroBadge"><span class="dot" id="heroDot"></span> <span id="heroBadgeText">Abierto ahora · Pedí y retirá en 20 min</span></div>
     <h1>Las mejores hamburguesas<span class="line2">de la ciudad.</span></h1>
     <p class="sub">Hamburguesas artesanales, pizzas, lomitos y sándwiches de milanesa preparados al momento con ingredientes frescos y de primera calidad. Directo de la parrilla a tu mesa.</p>
     <div class="hero-actions">
-      <a href="https://wa.me/5492664864302?text=Hola%20MC%20Tili!%20Quiero%20hacer%20un%20pedido%20%F0%9F%8D%94" target="_blank" rel="noopener" class="btn btn-primary">🔥 Pedir Ahora</a>
       <a href="#menu" class="btn btn-outline">Ver Menú</a>
     </div>
     <div class="hero-stats">
       <div class="hero-stat"><b>100%</b><span>Carne vacuna</span></div>
-      <div class="hero-stat"><b>+8</b><span>Años en el barrio</span></div>
+      <div class="hero-stat"><b>+4</b><span>Años en el barrio</span></div>
       <div class="hero-stat"><b>4.9★</b><span>Calificación clientes</span></div>
       <div class="hero-stat"><b>20 min</b><span>Entrega promedio</span></div>
     </div>
@@ -823,56 +824,7 @@ a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visib
       <h2 class="section-title">Especialidades de la <em>casa</em></h2>
       <p class="section-sub">Cada categoría, pensada para que no te falte nada. Elegí y armá tu pedido en segundos.</p>
     </div>
-    <div class="spec-grid">
-      <div class="spec-card reveal" data-cat="burgers" onclick="goToMenu('burgers')">
-        <span class="spec-icon">🍔</span>
-        <h3>Hamburguesas</h3>
-        <p>Smash y clásicas, con pan artesanal y carne 100% vacuna.</p>
-        <span class="spec-link">Ver productos <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
-      </div>
-      <div class="spec-card reveal" data-cat="pizzas" onclick="goToMenu('pizzas')">
-        <span class="spec-icon">🍕</span>
-        <h3>Pizzas</h3>
-        <p>Masa madre, horneadas al momento con muzzarella extra.</p>
-        <span class="spec-link">Ver productos <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
-      </div>
-      <div class="spec-card reveal" data-cat="lomitos" onclick="goToMenu('lomitos')">
-        <span class="spec-icon">🥩</span>
-        <h3>Lomitos</h3>
-        <p>Bife de lomo jugoso con guarniciones a elección.</p>
-        <span class="spec-link">Ver productos <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
-      </div>
-      <div class="spec-card reveal" data-cat="milanesa" onclick="goToMenu('milanesa')">
-        <span class="spec-icon">🥪</span>
-        <h3>Sándwiches de milanesa</h3>
-        <p>Milanesa crocante, a la napolitana o completa.</p>
-        <span class="spec-link">Ver productos <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
-      </div>
-      <div class="spec-card reveal" data-cat="panchos" onclick="goToMenu('panchos')">
-        <span class="spec-icon">🌭</span>
-        <h3>Panchos</h3>
-        <p>Clásicos o a lo pobre, con todos los aderezos.</p>
-        <span class="spec-link">Ver productos <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
-      </div>
-      <div class="spec-card reveal" data-cat="papas" onclick="goToMenu('papas')">
-        <span class="spec-icon">🍟</span>
-        <h3>Papas fritas</h3>
-        <p>Cortadas a mano, cheddar y bacon o clásicas.</p>
-        <span class="spec-link">Ver productos <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
-      </div>
-      <div class="spec-card reveal" data-cat="bebidas" onclick="goToMenu('bebidas')">
-        <span class="spec-icon">🥤</span>
-        <h3>Bebidas</h3>
-        <p>Gaseosas, aguas y cerveza artesanal bien fría.</p>
-        <span class="spec-link">Ver productos <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
-      </div>
-      <div class="spec-card reveal" style="display:flex;flex-direction:column;justify-content:center;align-items:flex-start;background:linear-gradient(155deg, var(--red) 0%, var(--red-dark) 100%);border:none;">
-        <span class="spec-icon">✨</span>
-        <h3>¿No sabés qué pedir?</h3>
-        <p style="color:rgba(255,255,255,.85);">Escribinos y te recomendamos el combo ideal para vos.</p>
-        <a href="https://wa.me/5492664864302?text=Hola!%20No%20s%C3%A9%20qu%C3%A9%20pedir%2C%20%C2%BFme%20recomend%C3%A1s%20algo%3F" target="_blank" rel="noopener" class="spec-link" style="color:#fff;">Consultar por WhatsApp <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
-      </div>
-    </div>
+    <div class="spec-grid" id="specGrid"></div>
   </div>
 </section>
 
@@ -884,16 +836,7 @@ a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visib
       <h2 class="section-title">Armá tu <em>pedido</em></h2>
       <p class="section-sub">Agregá los productos que quieras y enviamos todo listo por WhatsApp.</p>
     </div>
-    <div class="menu-tabs" id="menuTabs">
-      <button class="menu-tab active" data-filter="all">Todos</button>
-      <button class="menu-tab" data-filter="burgers">🍔 Hamburguesas</button>
-      <button class="menu-tab" data-filter="pizzas">🍕 Pizzas</button>
-      <button class="menu-tab" data-filter="lomitos">🥩 Lomitos</button>
-      <button class="menu-tab" data-filter="milanesa">🥪 Milanesas</button>
-      <button class="menu-tab" data-filter="panchos">🌭 Panchos</button>
-      <button class="menu-tab" data-filter="papas">🍟 Papas</button>
-      <button class="menu-tab" data-filter="bebidas">🥤 Bebidas</button>
-    </div>
+    <div class="menu-tabs" id="menuTabs"></div>
     <div class="menu-grid" id="menuGrid"></div>
   </div>
 </section>
@@ -966,12 +909,12 @@ a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visib
     </div>
     <div class="loc-wrap">
       <div class="loc-map reveal">
-        <iframe src="https://www.google.com/maps?q=Villa%20Mercedes%2C%20San%20Luis%2C%20Argentina&output=embed" loading="lazy" allowfullscreen referrerpolicy="no-referrer-when-downgrade" title="Ubicación MC Tili"></iframe>
+        <iframe src="https://www.google.com/maps?q=-32.733917,-65.292222&output=embed" loading="lazy" allowfullscreen referrerpolicy="no-referrer-when-downgrade" title="Ubicación MC Tili"></iframe>
       </div>
       <div class="loc-info reveal">
         <div class="loc-row">
           <div class="ic">📍</div>
-          <div><h4>Dirección</h4><p>Av. Principal 1234, Villa Mercedes, San Luis</p></div>
+          <div><h4>Dirección</h4><p>Tilisarao, San Luis</p></div>
         </div>
         <div class="loc-row">
           <div class="ic">🕒</div>
@@ -981,7 +924,7 @@ a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visib
           <div class="ic">📞</div>
           <div><h4>Teléfono</h4><p>2664 86-4302</p></div>
         </div>
-        <a href="https://www.google.com/maps/dir/?api=1&destination=Villa+Mercedes,San+Luis,Argentina" target="_blank" rel="noopener" class="btn btn-primary">📍 Cómo llegar</a>
+        <a href="https://www.google.com/maps/dir/?api=1&destination=-32.733917,-65.292222" target="_blank" rel="noopener" class="btn btn-primary">📍 Cómo llegar</a>
       </div>
     </div>
   </div>
@@ -1102,6 +1045,7 @@ a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visib
     <h3>⚙️ Panel de administración</h3>
     <div class="admin-tabs">
       <div class="admin-tab active" data-tab="menu">Menú y precios</div>
+      <div class="admin-tab" data-tab="categories">Categorías</div>
       <div class="admin-tab" data-tab="new">Agregar producto</div>
       <div class="admin-tab" data-tab="promos">Promociones</div>
       <div class="admin-tab" data-tab="gallery">Galería</div>
@@ -1129,21 +1073,28 @@ a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visib
       <div class="form-row">
         <div class="field"><label>Nombre</label><input type="text" id="newItemName" placeholder="Ej: Triple Bacon"></div>
         <div class="field"><label>Categoría</label>
-          <select id="newItemCat">
-            <option value="burgers">Hamburguesas</option>
-            <option value="pizzas">Pizzas</option>
-            <option value="lomitos">Lomitos</option>
-            <option value="milanesa">Sándwiches de milanesa</option>
-            <option value="panchos">Panchos</option>
-            <option value="papas">Papas fritas</option>
-            <option value="bebidas">Bebidas</option>
-          </select>
+          <select id="newItemCat"></select>
         </div>
       </div>
       <div class="field"><label>Descripción</label><textarea id="newItemDesc" placeholder="Descripción del producto"></textarea></div>
       <div class="field"><label>Precio ($)</label><input type="number" id="newItemPrice" placeholder="Ej: 6500"></div>
       <div class="field"><label class="admin-flag" style="font-size:13px;"><input type="checkbox" id="newItemIsNew"> Marcar como Novedad</label></div>
       <button class="btn btn-gold" id="addNewItemBtn">➕ Agregar al menú</button>
+    </div>
+
+    <!-- CATEGORÍAS -->
+    <div id="adminTabCategories" style="display:none;">
+      <div class="admin-note">Agregá, editá o quitá categorías del menú (por ejemplo "Postres" o "Empanadas"). Los cambios se reflejan en el filtro del menú, en las tarjetas del home y en "Agregar producto".</div>
+      <div id="adminCategoriesList"></div>
+      <div class="form-row" style="margin-top:18px;">
+        <div class="field"><label>Ícono (emoji)</label><input type="text" id="newCatIcon" placeholder="🍰" maxlength="4"></div>
+        <div class="field"><label>Nombre</label><input type="text" id="newCatLabel" placeholder="Ej: Postres"></div>
+      </div>
+      <button class="btn btn-outline admin-add-bar" id="addCategoryBtn">➕ Agregar categoría</button>
+      <div class="admin-save-bar">
+        <button class="btn btn-gold" id="adminSaveCategoriesBtn">💾 Guardar cambios</button>
+        <button class="admin-logout" id="adminLogoutBtn4">Cerrar sesión</button>
+      </div>
     </div>
 
     <!-- PROMOCIONES -->
@@ -1217,15 +1168,57 @@ const FALLBACK_MENU = [
   {id:8, cat:"lomitos", icon:"🥩", name:"Lomito Completo", desc:"Jamón, queso, huevo, panceta y papas.", price:7900, isNew:false, paused:false},
   {id:9, cat:"milanesa", icon:"🥪", name:"Milanesa Napolitana", desc:"Milanesa de ternera, jamón, muzzarella y salsa.", price:6100, isNew:false, paused:false},
   {id:10, cat:"milanesa", icon:"🥪", name:"Milanesa Completa", desc:"Milanesa, huevo frito, lechuga y tomate.", price:5800, isNew:false, paused:false},
-  {id:11, cat:"panchos", icon:"🌭", name:"Pancho Clásico", desc:"Salchicha tipo Viena con papas pay y aderezos.", price:3200, isNew:false, paused:false},
-  {id:12, cat:"panchos", icon:"🌭", name:"Pancho a lo Pobre", desc:"Con huevo frito, panceta y papas.", price:4100, isNew:false, paused:false},
   {id:13, cat:"papas", icon:"🍟", name:"Papas Clásicas", desc:"Cortadas a mano, bien doradas.", price:3300, isNew:false, paused:false},
   {id:14, cat:"papas", icon:"🍟", name:"Papas Cheddar & Bacon", desc:"Con cheddar fundido y panceta crocante.", price:4600, isNew:false, paused:false},
   {id:15, cat:"bebidas", icon:"🥤", name:"Gaseosa Línea Coca-Cola", desc:"500ml, bien fría.", price:1800, isNew:false, paused:false},
   {id:16, cat:"bebidas", icon:"🍺", name:"Cerveza Artesanal", desc:"Rubia o IPA, 473ml.", price:2900, isNew:false, paused:false},
 ];
 
-const CAT_LABEL = {burgers:"Hamburguesas", pizzas:"Pizzas", lomitos:"Lomitos", milanesa:"Sándwiches de milanesa", panchos:"Panchos", papas:"Papas fritas", bebidas:"Bebidas"};
+/* ============ CATEGORÍAS (dinámicas, editables desde el admin) ============ */
+const CATEGORIES_SETTING_KEY = "categories";
+const DEFAULT_CATEGORIES = [
+  {slug:"burgers", label:"Hamburguesas", icon:"🍔", desc:"Smash y clásicas, con pan artesanal y carne 100% vacuna."},
+  {slug:"pizzas", label:"Pizzas", icon:"🍕", desc:"Masa madre, horneadas al momento con muzzarella extra."},
+  {slug:"lomitos", label:"Lomitos", icon:"🥩", desc:"Bife de lomo jugoso con guarniciones a elección."},
+  {slug:"milanesa", label:"Sándwiches de milanesa", icon:"🥪", desc:"Milanesa crocante, a la napolitana o completa."},
+  {slug:"papas", label:"Papas fritas", icon:"🍟", desc:"Cortadas a mano, cheddar y bacon o clásicas."},
+  {slug:"bebidas", label:"Bebidas", icon:"🥤", desc:"Gaseosas, aguas y cerveza artesanal bien fría."},
+];
+let CATEGORIES = [...DEFAULT_CATEGORIES];
+
+function slugify(str){
+  const base = (str||"").toLowerCase().trim()
+    .normalize("NFD").replace(/[\u0300-\u036f]/g,"")
+    .replace(/[^a-z0-9]+/g,"_").replace(/^_+|_+$/g,"");
+  return base || ("cat" + Date.now());
+}
+
+function catLabel(slug){
+  const c = CATEGORIES.find(c => c.slug === slug);
+  return c ? c.label : slug;
+}
+
+/* ============ HORARIO DE ATENCIÓN (19:00 a 00:30, todos los días) ============ */
+function isOpenNow(){
+  const now = new Date();
+  const h = now.getHours(), m = now.getMinutes();
+  return (h >= 19) || (h === 0 && m <= 30);
+}
+
+function updateOpenStatus(){
+  const dot = document.getElementById("heroDot");
+  const text = document.getElementById("heroBadgeText");
+  if(!dot || !text) return;
+  if(isOpenNow()){
+    dot.classList.remove("closed");
+    text.textContent = "Abierto ahora · Pedí y retirá en 20 min";
+  } else {
+    dot.classList.add("closed");
+    text.textContent = "Cerrado ahora · Abrimos a las 19:00 hs";
+  }
+}
+updateOpenStatus();
+setInterval(updateOpenStatus, 60000);
 
 function money(n){ return "$" + (n||0).toLocaleString("es-AR"); }
 function escapeHtml(str){
@@ -1286,6 +1279,40 @@ document.getElementById("menuTabs").addEventListener("click", e => {
     item.classList.toggle("show", filter === "all" || item.dataset.cat === filter);
   });
 });
+
+function renderMenuTabs(){
+  const wrap = document.getElementById("menuTabs");
+  wrap.innerHTML = `<button class="menu-tab active" data-filter="all">Todos</button>` +
+    CATEGORIES.map(c => `<button class="menu-tab" data-filter="${c.slug}">${c.icon||"🍽️"} ${escapeHtml(c.label)}</button>`).join("");
+}
+
+function renderSpecGrid(){
+  const grid = document.getElementById("specGrid");
+  if(!grid) return;
+  const dynamicCards = CATEGORIES.map(c => `
+    <div class="spec-card reveal" data-cat="${c.slug}" onclick="goToMenu('${c.slug}')">
+      <span class="spec-icon">${c.icon||"🍽️"}</span>
+      <h3>${escapeHtml(c.label)}</h3>
+      <p>${escapeHtml(c.desc || ("Descubrí nuestras opciones de " + c.label.toLowerCase() + "."))}</p>
+      <span class="spec-link">Ver productos <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+    </div>`).join("");
+  const ctaCard = `
+    <div class="spec-card reveal" style="display:flex;flex-direction:column;justify-content:center;align-items:flex-start;background:linear-gradient(155deg, var(--red) 0%, var(--red-dark) 100%);border:none;">
+      <span class="spec-icon">✨</span>
+      <h3>¿No sabés qué pedir?</h3>
+      <p style="color:rgba(255,255,255,.85);">Escribinos y te recomendamos el combo ideal para vos.</p>
+      <a href="https://wa.me/5492664864302?text=Hola!%20No%20s%C3%A9%20qu%C3%A9%20pedir%2C%20%C2%BFme%20recomend%C3%A1s%20algo%3F" target="_blank" rel="noopener" class="spec-link" style="color:#fff;">Consultar por WhatsApp <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+    </div>`;
+  grid.innerHTML = dynamicCards + ctaCard;
+}
+
+function populateNewItemCatSelect(){
+  const sel = document.getElementById("newItemCat");
+  if(!sel) return;
+  const prev = sel.value;
+  sel.innerHTML = CATEGORIES.map(c => `<option value="${c.slug}">${escapeHtml(c.label)}</option>`).join("");
+  if(CATEGORIES.some(c => c.slug === prev)) sel.value = prev;
+}
 
 function goToMenu(cat){
   document.getElementById("menu").scrollIntoView({behavior:"smooth"});
@@ -1599,11 +1626,12 @@ document.getElementById("reviewForm").addEventListener("submit", async function(
 async function initData(){
   if(sb){
     try{
-      const [menuRes, promoRes, galRes, logoRes] = await Promise.all([
+      const [menuRes, promoRes, galRes, logoRes, categoriesRes] = await Promise.all([
         sb.from("menu_items").select("*").order("sort_order"),
         sb.from("promos").select("*").order("sort_order"),
         sb.from("gallery_items").select("*").order("sort_order"),
-        sb.from("site_settings").select("value").eq("key", LOGO_SETTING_KEY).maybeSingle()
+        sb.from("site_settings").select("value").eq("key", LOGO_SETTING_KEY).maybeSingle(),
+        sb.from("site_settings").select("value").eq("key", CATEGORIES_SETTING_KEY).maybeSingle()
       ]);
 
       MENU = (!menuRes.error && menuRes.data && menuRes.data.length)
@@ -1622,14 +1650,26 @@ async function initData(){
         customLogo = logoRes.data.value;
         applyLogo(customLogo);
       }
+
+      if(categoriesRes && !categoriesRes.error && categoriesRes.data && categoriesRes.data.value){
+        try{
+          const parsed = JSON.parse(categoriesRes.data.value);
+          CATEGORIES = (Array.isArray(parsed) && parsed.length) ? parsed : [...DEFAULT_CATEGORIES];
+        }catch(e){ CATEGORIES = [...DEFAULT_CATEGORIES]; }
+      } else {
+        CATEGORIES = [...DEFAULT_CATEGORIES];
+      }
     }catch(err){
       console.error("No se pudo conectar con Supabase, usando datos locales:", err);
-      MENU = [...FALLBACK_MENU]; PROMOS = [...FALLBACK_PROMOS]; GALLERY = [...FALLBACK_GALLERY];
+      MENU = [...FALLBACK_MENU]; PROMOS = [...FALLBACK_PROMOS]; GALLERY = [...FALLBACK_GALLERY]; CATEGORIES = [...DEFAULT_CATEGORIES];
     }
   } else {
-    MENU = [...FALLBACK_MENU]; PROMOS = [...FALLBACK_PROMOS]; GALLERY = [...FALLBACK_GALLERY];
+    MENU = [...FALLBACK_MENU]; PROMOS = [...FALLBACK_PROMOS]; GALLERY = [...FALLBACK_GALLERY]; CATEGORIES = [...DEFAULT_CATEGORIES];
   }
   await loadReviewsData();
+  renderMenuTabs();
+  renderSpecGrid();
+  populateNewItemCatSelect();
   renderMenu();
   renderPromos();
   renderGallery();
@@ -1672,6 +1712,8 @@ document.getElementById("adminLoginForm").addEventListener("submit", async funct
   adminLoginOverlay.classList.remove("open");
   adminPanelOverlay.classList.add("open");
   renderAdminMenuList();
+  renderAdminCategories();
+  populateNewItemCatSelect();
   renderAdminPromoList();
   renderAdminGalleryList();
   renderAdminReviewsList();
@@ -1689,7 +1731,7 @@ document.getElementById("adminLogoutBtn").addEventListener("click", adminLogout)
 document.getElementById("adminLogoutBtn2").addEventListener("click", adminLogout);
 document.getElementById("adminLogoutBtn3").addEventListener("click", adminLogout);
 
-const ADMIN_TAB_IDS = {menu:"adminTabMenu", new:"adminTabNew", promos:"adminTabPromos", gallery:"adminTabGallery", reviews:"adminTabReviews", logo:"adminTabLogo"};
+const ADMIN_TAB_IDS = {menu:"adminTabMenu", categories:"adminTabCategories", new:"adminTabNew", promos:"adminTabPromos", gallery:"adminTabGallery", reviews:"adminTabReviews", logo:"adminTabLogo"};
 document.querySelectorAll(".admin-tab").forEach(tab => {
   tab.addEventListener("click", () => {
     document.querySelectorAll(".admin-tab").forEach(t => t.classList.remove("active"));
@@ -1798,7 +1840,8 @@ document.getElementById("newItemImgInput").addEventListener("change", e => {
   reader.readAsDataURL(file);
 });
 
-document.getElementById("addNewItemBtn").addEventListener("click", async () => {
+document.getElementById("addNewItemBtn").addEventListener("click", async function(){
+  if(this.disabled) return;
   const name = document.getElementById("newItemName").value.trim();
   const cat = document.getElementById("newItemCat").value;
   const desc = document.getElementById("newItemDesc").value.trim();
@@ -1809,32 +1852,106 @@ document.getElementById("addNewItemBtn").addEventListener("click", async () => {
     return;
   }
 
+  this.disabled = true;
+  this.style.opacity = "0.6";
+  const originalText = this.textContent;
+  this.textContent = "Agregando...";
+
   const newItem = {cat, icon:"🍔", name, desc, price, isNew, paused:false};
   if(newItemImgData) newItem.img = newItemImgData;
 
-  if(sb){
-    const {data, error} = await sb.from("menu_items").insert({
-      name, description:desc, price, category:cat, icon:"🍔",
-      image_url:newItemImgData || null, is_new:isNew, is_paused:false
-    }).select().single();
-    if(!error && data) newItem.id = data.id;
-  } else {
-    newItem.id = "local-" + Date.now();
+  try{
+    if(sb){
+      const {data, error} = await sb.from("menu_items").insert({
+        name, description:desc, price, category:cat, icon:"🍔",
+        image_url:newItemImgData || null, is_new:isNew, is_paused:false
+      }).select().single();
+      if(!error && data) newItem.id = data.id;
+    } else {
+      newItem.id = "local-" + Date.now();
+    }
+
+    MENU.push(newItem);
+    renderMenu();
+    renderAdminMenuList();
+    showToast("¡Producto agregado! 🍔");
+
+    document.getElementById("newItemName").value = "";
+    document.getElementById("newItemDesc").value = "";
+    document.getElementById("newItemPrice").value = "";
+    document.getElementById("newItemIsNew").checked = false;
+    newItemImgData = null;
+    newItemThumb.innerHTML = "🍔";
+    document.getElementById("newItemImgInput").value = "";
+
+    adminPanelOverlay.classList.remove("open");
+  } finally {
+    this.disabled = false;
+    this.style.opacity = "";
+    this.textContent = originalText;
   }
-
-  MENU.push(newItem);
-  renderMenu();
-  renderAdminMenuList();
-  showToast("¡Producto agregado! 🍔");
-
-  document.getElementById("newItemName").value = "";
-  document.getElementById("newItemDesc").value = "";
-  document.getElementById("newItemPrice").value = "";
-  document.getElementById("newItemIsNew").checked = false;
-  newItemImgData = null;
-  newItemThumb.innerHTML = "🍔";
-  document.getElementById("newItemImgInput").value = "";
 });
+
+/* ============ ADMIN: CATEGORÍAS ============ */
+function renderAdminCategories(){
+  const wrap = document.getElementById("adminCategoriesList");
+  wrap.innerHTML = CATEGORIES.map((c, idx) => `
+    <div class="admin-item-row" data-idx="${idx}" style="grid-template-columns:56px 1.4fr 100px auto;">
+      <input type="text" data-role="icon" value="${(c.icon||"").replace(/"/g,'&quot;')}" placeholder="🍔" style="text-align:center;font-size:18px;">
+      <input type="text" data-role="label" value="${(c.label||"").replace(/"/g,'&quot;')}" placeholder="Nombre de la categoría">
+      <span style="font-size:11px;color:var(--muted);align-self:center;">${escapeHtml(c.slug)}</span>
+      <button class="del-btn" data-role="del">Eliminar</button>
+    </div>
+  `).join("");
+}
+
+document.getElementById("adminCategoriesList").addEventListener("click", e => {
+  const row = e.target.closest(".admin-item-row");
+  if(!row) return;
+  const idx = Number(row.dataset.idx);
+  if(e.target.dataset.role === "del"){
+    const cat = CATEGORIES[idx];
+    const inUse = MENU.some(m => m.cat === cat.slug);
+    const msg = inUse
+      ? `Hay productos usando "${cat.label}". Si la eliminás, esos productos van a quedar sin categoría visible en el filtro (no se borran). ¿Eliminar igual?`
+      : `¿Eliminar la categoría "${cat.label}"?`;
+    if(!confirm(msg)) return;
+    CATEGORIES.splice(idx, 1);
+    renderAdminCategories();
+  }
+});
+
+document.getElementById("adminCategoriesList").addEventListener("change", e => {
+  const row = e.target.closest(".admin-item-row");
+  if(!row) return;
+  const idx = Number(row.dataset.idx);
+  const role = e.target.dataset.role;
+  if(role === "icon") CATEGORIES[idx].icon = e.target.value.trim();
+  if(role === "label") CATEGORIES[idx].label = e.target.value.trim();
+});
+
+document.getElementById("addCategoryBtn").addEventListener("click", () => {
+  const icon = document.getElementById("newCatIcon").value.trim() || "🍽️";
+  const label = document.getElementById("newCatLabel").value.trim();
+  if(!label){ showToast("Ponele un nombre a la categoría"); return; }
+  let base = slugify(label), finalSlug = base, n = 2;
+  while(CATEGORIES.some(c => c.slug === finalSlug)){ finalSlug = base + "_" + n; n++; }
+  CATEGORIES.push({slug:finalSlug, label, icon, desc:""});
+  renderAdminCategories();
+  document.getElementById("newCatIcon").value = "";
+  document.getElementById("newCatLabel").value = "";
+  showToast("Categoría agregada. No olvides Guardar cambios ✓");
+});
+
+document.getElementById("adminSaveCategoriesBtn").addEventListener("click", async () => {
+  if(sb) await sb.from("site_settings").upsert({key: CATEGORIES_SETTING_KEY, value: JSON.stringify(CATEGORIES)});
+  renderMenuTabs();
+  renderSpecGrid();
+  populateNewItemCatSelect();
+  renderMenu();
+  showToast("Categorías actualizadas ✓");
+});
+document.getElementById("adminLogoutBtn4").addEventListener("click", adminLogout);
 
 /* ============ ADMIN: PROMOCIONES ============ */
 function renderAdminPromoList(){
@@ -1885,19 +2002,27 @@ async function deletePromo(idx){
   showToast("Promo eliminada");
 }
 
-document.getElementById("addPromoBtn").addEventListener("click", async () => {
-  const newPromo = {ribbon:"Oferta", title:"Nueva promo", desc:"", oldPrice:null, newPrice:0, paused:false};
-  if(sb){
-    const {data, error} = await sb.from("promos").insert({
-      ribbon:"Oferta", title:"Nueva promo", description:"", new_price:0, is_paused:false
-    }).select().single();
-    if(!error && data) newPromo.id = data.id;
-  } else {
-    newPromo.id = "local-" + Date.now();
+document.getElementById("addPromoBtn").addEventListener("click", async function(){
+  if(this.disabled) return;
+  this.disabled = true;
+  this.style.opacity = "0.6";
+  try{
+    const newPromo = {ribbon:"Oferta", title:"Nueva promo", desc:"", oldPrice:null, newPrice:0, paused:false};
+    if(sb){
+      const {data, error} = await sb.from("promos").insert({
+        ribbon:"Oferta", title:"Nueva promo", description:"", new_price:0, is_paused:false
+      }).select().single();
+      if(!error && data) newPromo.id = data.id;
+    } else {
+      newPromo.id = "local-" + Date.now();
+    }
+    PROMOS.push(newPromo);
+    renderAdminPromoList();
+    renderPromos();
+  } finally {
+    this.disabled = false;
+    this.style.opacity = "";
   }
-  PROMOS.push(newPromo);
-  renderAdminPromoList();
-  renderPromos();
 });
 
 document.getElementById("adminSavePromosBtn").addEventListener("click", async () => {
@@ -2007,19 +2132,27 @@ async function deleteGalleryItem(idx){
   showToast("Recuadro eliminado");
 }
 
-document.getElementById("addGalleryBtn").addEventListener("click", async () => {
-  const newG = {label:"Nueva foto", big:false, mediaType:"emoji", mediaValue:"📷", linkUrl:""};
-  if(sb){
-    const {data, error} = await sb.from("gallery_items").insert({
-      label:"Nueva foto", is_big:false, media_type:"emoji", media_value:"📷"
-    }).select().single();
-    if(!error && data) newG.id = data.id;
-  } else {
-    newG.id = "local-" + Date.now();
+document.getElementById("addGalleryBtn").addEventListener("click", async function(){
+  if(this.disabled) return;
+  this.disabled = true;
+  this.style.opacity = "0.6";
+  try{
+    const newG = {label:"Nueva foto", big:false, mediaType:"emoji", mediaValue:"📷", linkUrl:""};
+    if(sb){
+      const {data, error} = await sb.from("gallery_items").insert({
+        label:"Nueva foto", is_big:false, media_type:"emoji", media_value:"📷"
+      }).select().single();
+      if(!error && data) newG.id = data.id;
+    } else {
+      newG.id = "local-" + Date.now();
+    }
+    GALLERY.push(newG);
+    renderAdminGalleryList();
+    renderGallery();
+  } finally {
+    this.disabled = false;
+    this.style.opacity = "";
   }
-  GALLERY.push(newG);
-  renderAdminGalleryList();
-  renderGallery();
 });
 
 document.getElementById("adminSaveGalleryBtn").addEventListener("click", async () => {
