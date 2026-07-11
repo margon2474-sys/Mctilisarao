@@ -1787,6 +1787,38 @@ async function deleteMenuItem(idx){
   showToast("Producto eliminado");
 }
 
+/* ============ COMPRESIÓN DE IMÁGENES (para que no pese subir/cargar fotos) ============ */
+function compressImage(file, maxDim = 1280, quality = 0.72, mimeType = "image/jpeg"){
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      const img = new Image();
+      img.onload = () => {
+        let { width, height } = img;
+        if(width > maxDim || height > maxDim){
+          if(width > height){
+            height = Math.round(height * (maxDim / width));
+            width = maxDim;
+          } else {
+            width = Math.round(width * (maxDim / height));
+            height = maxDim;
+          }
+        }
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL(mimeType, quality));
+      };
+      img.onerror = () => reject(new Error("No se pudo procesar la imagen"));
+      img.src = e.target.result;
+    };
+    reader.onerror = () => reject(new Error("No se pudo leer el archivo"));
+    reader.readAsDataURL(file);
+  });
+}
+
 document.getElementById("adminMenuList").addEventListener("change", e => {
   const row = e.target.closest(".admin-item-row");
   if(!row) return;
@@ -1794,12 +1826,11 @@ document.getElementById("adminMenuList").addEventListener("change", e => {
   const role = e.target.dataset.role;
 
   if(role === "fileInput" && e.target.files[0]){
-    const reader = new FileReader();
-    reader.onload = ev => {
-      MENU[idx].img = ev.target.result;
+    const file = e.target.files[0];
+    compressImage(file).then(dataUrl => {
+      MENU[idx].img = dataUrl;
       row.querySelector('[data-role="thumb"]').innerHTML = itemThumbHtml(MENU[idx]);
-    };
-    reader.readAsDataURL(e.target.files[0]);
+    }).catch(() => showToast("No se pudo procesar la imagen, probá con otra foto"));
     return;
   }
   if(role === "name") MENU[idx].name = e.target.value;
@@ -1832,12 +1863,10 @@ let newItemImgData = null;
 document.getElementById("newItemImgInput").addEventListener("change", e => {
   const file = e.target.files[0];
   if(!file) return;
-  const reader = new FileReader();
-  reader.onload = ev => {
-    newItemImgData = ev.target.result;
+  compressImage(file).then(dataUrl => {
+    newItemImgData = dataUrl;
     newItemThumb.innerHTML = `<img src="${newItemImgData}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:10px;">`;
-  };
-  reader.readAsDataURL(file);
+  }).catch(() => showToast("No se pudo procesar la imagen, probá con otra foto"));
 });
 
 document.getElementById("addNewItemBtn").addEventListener("click", async function(){
@@ -2086,14 +2115,13 @@ document.getElementById("adminGalleryList").addEventListener("change", e => {
   if(role === "label") GALLERY[idx].label = e.target.value;
 
   if(role === "photoInput" && e.target.files[0]){
-    const reader = new FileReader();
-    reader.onload = ev => {
+    const file = e.target.files[0];
+    compressImage(file, 1280, 0.72).then(dataUrl => {
       GALLERY[idx].mediaType = "image";
-      GALLERY[idx].mediaValue = ev.target.result;
+      GALLERY[idx].mediaValue = dataUrl;
       GALLERY[idx].linkUrl = "";
       row.querySelector('[data-role="thumb"]').innerHTML = galleryThumbHtml(GALLERY[idx]);
-    };
-    reader.readAsDataURL(e.target.files[0]);
+    }).catch(() => showToast("No se pudo procesar la imagen, probá con otra foto"));
   }
 
   if(role === "videoInput" && e.target.files[0]){
@@ -2206,12 +2234,10 @@ document.getElementById("adminReviewsList").addEventListener("click", async e =>
 document.getElementById("logoInput").addEventListener("change", e => {
   const file = e.target.files[0];
   if(!file) return;
-  const reader = new FileReader();
-  reader.onload = ev => {
-    newLogoData = ev.target.result;
+  compressImage(file, 600, 0.9, "image/png").then(dataUrl => {
+    newLogoData = dataUrl;
     document.getElementById("logoPreview").innerHTML = `<img src="${newLogoData}" alt="">`;
-  };
-  reader.readAsDataURL(file);
+  }).catch(() => showToast("No se pudo procesar la imagen, probá con otra foto"));
 });
 
 document.getElementById("saveLogoBtn").addEventListener("click", async () => {
