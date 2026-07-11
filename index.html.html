@@ -1030,6 +1030,17 @@ a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visib
 
 <div class="toast" id="toast"></div>
 
+<!-- Upsell: ofrecer una bebida antes de enviar el pedido -->
+<div class="admin-overlay" id="upsellOverlay">
+  <div class="admin-modal">
+    <div class="admin-close" id="upsellClose">✕</div>
+    <h3>🥤 ¿Le sumás una bebida?</h3>
+    <p style="color:var(--muted);font-size:13.5px;margin:-14px 0 20px;line-height:1.5;">Todavía no agregaste nada para tomar. Elegí una y la sumamos al pedido.</p>
+    <div id="upsellDrinksList" style="display:flex;flex-direction:column;gap:10px;margin-bottom:20px;"></div>
+    <button class="btn btn-outline" id="upsellSkipBtn">No, gracias · Continuar</button>
+  </div>
+</div>
+
 <!-- ============ ADMIN GEAR ============ -->
 <button class="admin-gear" id="adminGear" aria-label="Panel de administración" title="Admin">⚙️</button>
 
@@ -1494,6 +1505,49 @@ function updateCartUI(){
   msg += `%0A*Total: ${money(total)}*%0A%0AMi nombre es: `;
   document.getElementById("cartSend").href = `https://wa.me/${WA_NUMBER}?text=${msg}`;
 }
+
+/* ============ UPSELL: OFRECER BEBIDA ANTES DE ENVIAR EL PEDIDO ============ */
+let upsellDismissed = false;
+
+function cartHasBebida(){
+  return Object.keys(cart).some(id => {
+    const item = MENU.find(m => String(m.id) === String(id));
+    return item && item.cat === "bebidas";
+  });
+}
+
+document.getElementById("cartSend").addEventListener("click", function(e){
+  if(upsellDismissed || cartHasBebida()) return;
+  const bebidas = MENU.filter(item => item.cat === "bebidas" && !item.paused);
+  if(!bebidas.length) return;
+  e.preventDefault();
+  document.getElementById("upsellDrinksList").innerHTML = bebidas.map(b => `
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--charcoal-2);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:10px 14px;">
+      <span style="font-size:13.5px;font-weight:600;">${b.icon||"🥤"} ${escapeHtml(b.name)} <span style="color:var(--gold);font-weight:700;">${money(b.price)}</span></span>
+      <button class="btn btn-gold" style="width:auto;padding:8px 16px;font-size:12.5px;" data-id="${b.id}">+ Agregar</button>
+    </div>
+  `).join("");
+  document.getElementById("upsellOverlay").classList.add("open");
+});
+
+document.getElementById("upsellDrinksList").addEventListener("click", e => {
+  const btn = e.target.closest("button[data-id]");
+  if(!btn) return;
+  addToCart(btn.dataset.id, btn);
+  setTimeout(() => {
+    document.getElementById("upsellOverlay").classList.remove("open");
+  }, 500);
+});
+
+document.getElementById("upsellSkipBtn").addEventListener("click", () => {
+  upsellDismissed = true;
+  document.getElementById("upsellOverlay").classList.remove("open");
+  window.open(document.getElementById("cartSend").href, "_blank");
+});
+
+document.getElementById("upsellClose").addEventListener("click", () => {
+  document.getElementById("upsellOverlay").classList.remove("open");
+});
 
 document.getElementById("fabCart").addEventListener("click", () => {
   document.getElementById("cartPanel").classList.add("open");
