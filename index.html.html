@@ -326,6 +326,20 @@ section{padding:120px 0;position:relative;}
 .promo-price .old{text-decoration:line-through;color:var(--muted);font-size:15px;}
 .promo-price .new{font-size:30px;font-weight:900;color:var(--gold);}
 .promo-card .btn{width:fit-content;position:relative;z-index:2;}
+.promo-photos{display:flex;margin-bottom:16px;position:relative;z-index:2;}
+.promo-photo{
+  width:54px;height:54px;border-radius:50%;overflow:hidden;border:2px solid var(--charcoal);
+  background:var(--charcoal-2);display:flex;align-items:center;justify-content:center;font-size:22px;
+}
+.promo-photo img{width:100%;height:100%;object-fit:cover;}
+.promo-items-picker{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:8px;margin-top:4px;}
+.promo-chip{
+  cursor:pointer;padding:6px 12px;border-radius:100px;background:var(--charcoal-2);
+  border:1px solid rgba(255,255,255,.08);font-size:11.5px;color:var(--muted);user-select:none;
+  transition:background .25s, color .25s, border-color .25s;
+}
+.promo-chip.active{background:var(--gold);color:var(--black);border-color:var(--gold);font-weight:700;}
+.promo-items-label{grid-column:1/-1;font-size:11px;color:var(--muted);margin-top:8px;}
 
 /* ============ MENU / PRODUCTOS ============ */
 .menu-tabs{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:46px;}
@@ -1197,6 +1211,7 @@ const FALLBACK_MENU = [
 /* ============ CATEGORÍAS (dinámicas, editables desde el admin) ============ */
 const CATEGORIES_SETTING_KEY = "categories";
 const FEATURED_SETTING_KEY = "featured_products";
+const PROMO_ITEMS_SETTING_KEY = "promo_items";
 const DEFAULT_CATEGORIES = [
   {slug:"burgers", label:"Hamburguesas", icon:"🍔", desc:"Smash y clásicas, con pan artesanal y carne 100% vacuna."},
   {slug:"pizzas", label:"Pizzas", icon:"🍕", desc:"Masa madre, horneadas al momento con muzzarella extra."},
@@ -1376,10 +1391,20 @@ function renderPromos(){
   }
   grid.innerHTML = visible.map((p, i) => {
     const waText = encodeURIComponent(`Hola! Quiero pedir la promo: ${p.title} (${money(p.newPrice)})`);
+    const linkedItems = (p.items || []).map(id => MENU.find(m => String(m.id) === String(id))).filter(Boolean);
+    const photosHtml = linkedItems.length ? `
+      <div class="promo-photos">
+        ${linkedItems.slice(0,4).map((m, idx) => `
+          <div class="promo-photo" style="margin-left:${idx>0 ? '-16px' : '0'};z-index:${10-idx};">
+            ${m.img ? `<img src="${m.img}" alt="${escapeHtml(m.name)}">` : `<span>${m.icon||"🍔"}</span>`}
+          </div>
+        `).join("")}
+      </div>` : "";
     return `
     <div class="promo-card">
       <span class="promo-ribbon">${escapeHtml(p.ribbon || "Oferta")}</span>
       <span class="promo-num">${String(i+1).padStart(2,"0")}</span>
+      ${photosHtml}
       <h3>${escapeHtml(p.title)}</h3>
       <p>${escapeHtml(p.desc)}</p>
       <div class="promo-price">${p.oldPrice ? `<span class="old">${money(p.oldPrice)}</span>` : ""}<span class="new">${money(p.newPrice)}</span></div>
@@ -1706,13 +1731,14 @@ document.getElementById("reviewForm").addEventListener("submit", async function(
 async function initData(){
   if(sb){
     try{
-      const [menuRes, promoRes, galRes, logoRes, categoriesRes, featuredRes] = await Promise.all([
+      const [menuRes, promoRes, galRes, logoRes, categoriesRes, featuredRes, promoItemsRes] = await Promise.all([
         sb.from("menu_items").select("*").order("sort_order"),
         sb.from("promos").select("*").order("sort_order"),
         sb.from("gallery_items").select("*").order("sort_order"),
         sb.from("site_settings").select("value").eq("key", LOGO_SETTING_KEY).maybeSingle(),
         sb.from("site_settings").select("value").eq("key", CATEGORIES_SETTING_KEY).maybeSingle(),
-        sb.from("site_settings").select("value").eq("key", FEATURED_SETTING_KEY).maybeSingle()
+        sb.from("site_settings").select("value").eq("key", FEATURED_SETTING_KEY).maybeSingle(),
+        sb.from("site_settings").select("value").eq("key", PROMO_ITEMS_SETTING_KEY).maybeSingle()
       ]);
 
       MENU = (!menuRes.error && menuRes.data && menuRes.data.length)
@@ -1725,9 +1751,15 @@ async function initData(){
       }
       MENU.forEach(item => { item.featured = featuredIds.includes(item.id); });
 
+      let promoItemsMap = {};
+      if(promoItemsRes && !promoItemsRes.error && promoItemsRes.data && promoItemsRes.data.value){
+        try{ promoItemsMap = JSON.parse(promoItemsRes.data.value); }catch(e){ promoItemsMap = {}; }
+      }
+
       PROMOS = (!promoRes.error && promoRes.data && promoRes.data.length)
         ? promoRes.data.map(r => ({id:r.id, ribbon:r.ribbon, title:r.title, desc:r.description, oldPrice:r.old_price, newPrice:r.new_price, paused:r.is_paused}))
         : [...FALLBACK_PROMOS];
+      PROMOS.forEach(p => { p.items = promoItemsMap[p.id] || []; });
 
       GALLERY = (!galRes.error && galRes.data && galRes.data.length)
         ? galRes.data.map(r => ({id:r.id, label:r.label, big:r.is_big, mediaType:r.media_type, mediaValue:r.media_value, linkUrl:r.link_url}))
@@ -2024,6 +2056,7 @@ document.getElementById("addNewItemBtn").addEventListener("click", async functio
     MENU.push(newItem);
     renderMenu();
     renderAdminMenuList();
+    renderAdminPromoList();
     showToast("¡Producto agregado! 🍔");
 
     document.getElementById("newItemName").value = "";
@@ -2107,6 +2140,7 @@ document.getElementById("adminLogoutBtn4").addEventListener("click", adminLogout
 /* ============ ADMIN: PROMOCIONES ============ */
 function renderAdminPromoList(){
   const wrap = document.getElementById("adminPromoList");
+  const activeMenu = MENU.filter(m => !m.paused);
   wrap.innerHTML = PROMOS.map((p, idx) => `
     <div class="admin-item-row promo-row${p.paused ? " paused-row" : ""}" data-idx="${idx}">
       <div style="display:flex;flex-direction:column;gap:8px;">
@@ -2117,9 +2151,39 @@ function renderAdminPromoList(){
       <input type="number" data-role="newPrice" value="${p.newPrice||0}" placeholder="Precio promo">
       <label class="admin-flag"><input type="checkbox" data-role="paused" ${p.paused?"checked":""}> Pausar</label>
       <button class="del-btn" data-role="del">Eliminar</button>
+      <div class="promo-items-label">📷 Elegí qué productos ya cargados forman esta promo (se muestran sus fotos):</div>
+      <div class="promo-items-picker">
+        ${activeMenu.length ? activeMenu.map(m => `
+          <label class="promo-chip${(p.items||[]).includes(m.id) ? " active" : ""}" data-pid="${m.id}">
+            <input type="checkbox" style="display:none;" ${(p.items||[]).includes(m.id) ? "checked" : ""}>
+            ${m.icon||"🍔"} ${escapeHtml(m.name)}
+          </label>
+        `).join("") : `<span style="font-size:11.5px;color:var(--muted);">Todavía no tenés productos cargados en el menú.</span>`}
+      </div>
     </div>
   `).join("");
 }
+
+document.getElementById("adminPromoList").addEventListener("click", e => {
+  const chip = e.target.closest(".promo-chip");
+  if(!chip) return;
+  const row = chip.closest(".admin-item-row");
+  const idx = Number(row.dataset.idx);
+  const pid = chip.dataset.pid;
+  const item = MENU.find(m => String(m.id) === String(pid));
+  if(!item) return;
+  if(!PROMOS[idx].items) PROMOS[idx].items = [];
+  const pos = PROMOS[idx].items.findIndex(id => String(id) === String(item.id));
+  if(pos >= 0){
+    PROMOS[idx].items.splice(pos, 1);
+    chip.classList.remove("active");
+    chip.querySelector("input").checked = false;
+  } else {
+    PROMOS[idx].items.push(item.id);
+    chip.classList.add("active");
+    chip.querySelector("input").checked = true;
+  }
+});
 
 document.getElementById("adminPromoList").addEventListener("change", e => {
   const row = e.target.closest(".admin-item-row");
@@ -2185,6 +2249,9 @@ document.getElementById("adminSavePromosBtn").addEventListener("click", function
           title:p.title, description:p.desc, old_price:p.oldPrice, new_price:p.newPrice, is_paused: !!p.paused
         }).eq("id", p.id);
       }
+      const promoItemsMap = {};
+      PROMOS.forEach(p => { if(p.id) promoItemsMap[p.id] = p.items || []; });
+      await sb.from("site_settings").upsert({key: PROMO_ITEMS_SETTING_KEY, value: JSON.stringify(promoItemsMap)});
     }
     renderPromos();
   });
