@@ -832,7 +832,7 @@ a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visib
       <h2 class="section-title">Especialidades de la <em>casa</em></h2>
       <p class="section-sub">Cada categoría, pensada para que no te falte nada. Elegí y armá tu pedido en segundos.</p>
     </div>
-    <div class="menu-grid" id="specFeaturedGrid" style="margin-bottom:36px;"></div>
+    <div class="menu-grid" id="specFeaturedGrid" style="display:none;margin-bottom:36px;"></div>
     <div class="spec-grid" id="specGrid"></div>
   </div>
 </section>
@@ -1274,7 +1274,14 @@ function renderFeaturedSpecialties(){
   const grid = document.getElementById("specFeaturedGrid");
   if(!grid) return;
   const featured = MENU.filter(item => item.featured && !item.paused);
-  grid.style.display = featured.length ? "grid" : "none";
+  if(!featured.length){
+    grid.style.display = "none";
+    grid.style.marginBottom = "0";
+    grid.innerHTML = "";
+    return;
+  }
+  grid.style.display = "grid";
+  grid.style.marginBottom = "36px";
   grid.innerHTML = featured.map(menuCardHtml).join("");
 }
 
