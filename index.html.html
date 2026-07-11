@@ -614,6 +614,12 @@ footer{background:var(--charcoal-2);padding:70px 0 26px;border-top:1px solid rgb
 .admin-item-row .admin-thumb{
   width:56px;height:56px;border-radius:10px;background:var(--charcoal-2);display:flex;align-items:center;
   justify-content:center;font-size:26px;overflow:hidden;cursor:pointer;border:1px dashed rgba(255,255,255,.15);
+  position:relative;
+}
+.admin-item-row .admin-thumb::after{
+  content:"✏️";position:absolute;bottom:-2px;right:-2px;font-size:10px;line-height:1;
+  background:var(--gold);color:var(--black);border-radius:50%;width:17px;height:17px;
+  display:flex;align-items:center;justify-content:center;
 }
 .admin-item-row .admin-thumb img{width:100%;height:100%;object-fit:cover;}
 .admin-item-row input{background:var(--charcoal-2);border:1px solid rgba(255,255,255,.08);border-radius:8px;color:#fff;padding:9px 10px;font-size:13px;width:100%;}
@@ -1752,8 +1758,11 @@ function renderAdminMenuList(){
   const wrap = document.getElementById("adminMenuList");
   wrap.innerHTML = MENU.map((item, idx) => `
     <div class="admin-item-row${item.paused ? " paused-row" : ""}" data-idx="${idx}">
-      <div class="admin-thumb" data-role="thumb">${itemThumbHtml(item)}</div>
-      <input type="text" data-role="name" value="${(item.name||"").replace(/"/g,'&quot;')}" placeholder="Nombre">
+      <div class="admin-thumb" data-role="thumb" title="Click para cambiar la foto">${itemThumbHtml(item)}</div>
+      <div style="display:flex;flex-direction:column;gap:6px;">
+        <input type="text" data-role="name" value="${(item.name||"").replace(/"/g,'&quot;')}" placeholder="Nombre">
+        <textarea data-role="desc" placeholder="Ingredientes / descripción" style="min-height:36px;">${escapeHtml(item.desc||"")}</textarea>
+      </div>
       <input type="number" data-role="price" value="${item.price}" placeholder="Precio">
       <input type="text" data-role="cat" value="${item.cat}" placeholder="Categoría">
       <label class="admin-flag"><input type="checkbox" data-role="isNew" ${item.isNew ? "checked" : ""}> Nuevo</label>
@@ -1788,6 +1797,29 @@ async function deleteMenuItem(idx){
 }
 
 /* ============ COMPRESIÓN DE IMÁGENES (para que no pese subir/cargar fotos) ============ */
+async function withSaveButton(btn, fn){
+  if(btn.disabled) return;
+  const original = btn.textContent;
+  btn.disabled = true;
+  btn.style.opacity = "0.7";
+  btn.textContent = "Guardando...";
+  try{
+    await fn();
+    btn.textContent = "✓ Listo";
+    setTimeout(() => {
+      btn.textContent = original;
+      btn.disabled = false;
+      btn.style.opacity = "";
+    }, 1100);
+  } catch(err){
+    console.error(err);
+    btn.textContent = original;
+    btn.disabled = false;
+    btn.style.opacity = "";
+    showToast("Ocurrió un error al guardar, probá de nuevo");
+  }
+}
+
 function compressImage(file, maxDim = 1280, quality = 0.72, mimeType = "image/jpeg"){
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -1834,6 +1866,7 @@ document.getElementById("adminMenuList").addEventListener("change", e => {
     return;
   }
   if(role === "name") MENU[idx].name = e.target.value;
+  if(role === "desc") MENU[idx].desc = e.target.value;
   if(role === "price") MENU[idx].price = Number(e.target.value) || 0;
   if(role === "cat") MENU[idx].cat = e.target.value.trim();
   if(role === "isNew") MENU[idx].isNew = e.target.checked;
@@ -1843,18 +1876,19 @@ document.getElementById("adminMenuList").addEventListener("change", e => {
   }
 });
 
-document.getElementById("adminSaveBtn").addEventListener("click", async () => {
-  if(sb){
-    for(const item of MENU){
-      if(!item.id) continue;
-      await sb.from("menu_items").update({
-        name:item.name, description:item.desc, price:item.price, category:item.cat,
-        image_url:item.img || null, is_new: !!item.isNew, is_paused: !!item.paused
-      }).eq("id", item.id);
+document.getElementById("adminSaveBtn").addEventListener("click", function(){
+  withSaveButton(this, async () => {
+    if(sb){
+      for(const item of MENU){
+        if(!item.id) continue;
+        await sb.from("menu_items").update({
+          name:item.name, description:item.desc, price:item.price, category:item.cat,
+          image_url:item.img || null, is_new: !!item.isNew, is_paused: !!item.paused
+        }).eq("id", item.id);
+      }
     }
-  }
-  renderMenu();
-  showToast("Cambios guardados ✓");
+    renderMenu();
+  });
 });
 
 /* ============ ADMIN: AGREGAR PRODUCTO ============ */
@@ -1972,13 +2006,14 @@ document.getElementById("addCategoryBtn").addEventListener("click", () => {
   showToast("Categoría agregada. No olvides Guardar cambios ✓");
 });
 
-document.getElementById("adminSaveCategoriesBtn").addEventListener("click", async () => {
-  if(sb) await sb.from("site_settings").upsert({key: CATEGORIES_SETTING_KEY, value: JSON.stringify(CATEGORIES)});
-  renderMenuTabs();
-  renderSpecGrid();
-  populateNewItemCatSelect();
-  renderMenu();
-  showToast("Categorías actualizadas ✓");
+document.getElementById("adminSaveCategoriesBtn").addEventListener("click", function(){
+  withSaveButton(this, async () => {
+    if(sb) await sb.from("site_settings").upsert({key: CATEGORIES_SETTING_KEY, value: JSON.stringify(CATEGORIES)});
+    renderMenuTabs();
+    renderSpecGrid();
+    populateNewItemCatSelect();
+    renderMenu();
+  });
 });
 document.getElementById("adminLogoutBtn4").addEventListener("click", adminLogout);
 
@@ -2054,17 +2089,18 @@ document.getElementById("addPromoBtn").addEventListener("click", async function(
   }
 });
 
-document.getElementById("adminSavePromosBtn").addEventListener("click", async () => {
-  if(sb){
-    for(const p of PROMOS){
-      if(!p.id) continue;
-      await sb.from("promos").update({
-        title:p.title, description:p.desc, old_price:p.oldPrice, new_price:p.newPrice, is_paused: !!p.paused
-      }).eq("id", p.id);
+document.getElementById("adminSavePromosBtn").addEventListener("click", function(){
+  withSaveButton(this, async () => {
+    if(sb){
+      for(const p of PROMOS){
+        if(!p.id) continue;
+        await sb.from("promos").update({
+          title:p.title, description:p.desc, old_price:p.oldPrice, new_price:p.newPrice, is_paused: !!p.paused
+        }).eq("id", p.id);
+      }
     }
-  }
-  renderPromos();
-  showToast("Promos guardadas ✓");
+    renderPromos();
+  });
 });
 
 /* ============ ADMIN: GALERÍA ============ */
@@ -2079,7 +2115,7 @@ function renderAdminGalleryList(){
   const wrap = document.getElementById("adminGalleryList");
   wrap.innerHTML = GALLERY.map((g, idx) => `
     <div class="admin-item-row gallery-row" data-idx="${idx}">
-      <div class="admin-thumb" data-role="thumb">${galleryThumbHtml(g)}</div>
+      <div class="admin-thumb" data-role="thumb" title="Click para cambiar la foto">${galleryThumbHtml(g)}</div>
       <input type="text" data-role="label" value="${(g.label||"").replace(/"/g,'&quot;')}" placeholder="Título">
       <div class="admin-media-controls">
         <button type="button" class="mini-btn" data-role="uploadPhotoBtn">📷 Subir foto</button>
@@ -2183,17 +2219,18 @@ document.getElementById("addGalleryBtn").addEventListener("click", async functio
   }
 });
 
-document.getElementById("adminSaveGalleryBtn").addEventListener("click", async () => {
-  if(sb){
-    for(const g of GALLERY){
-      if(!g.id) continue;
-      await sb.from("gallery_items").update({
-        label:g.label, media_type:g.mediaType, media_value:g.mediaValue, link_url:g.linkUrl
-      }).eq("id", g.id);
+document.getElementById("adminSaveGalleryBtn").addEventListener("click", function(){
+  withSaveButton(this, async () => {
+    if(sb){
+      for(const g of GALLERY){
+        if(!g.id) continue;
+        await sb.from("gallery_items").update({
+          label:g.label, media_type:g.mediaType, media_value:g.mediaValue, link_url:g.linkUrl
+        }).eq("id", g.id);
+      }
     }
-  }
-  renderGallery();
-  showToast("Galería guardada ✓");
+    renderGallery();
+  });
 });
 
 /* ============ ADMIN: RESEÑAS ============ */
@@ -2240,14 +2277,15 @@ document.getElementById("logoInput").addEventListener("change", e => {
   }).catch(() => showToast("No se pudo procesar la imagen, probá con otra foto"));
 });
 
-document.getElementById("saveLogoBtn").addEventListener("click", async () => {
+document.getElementById("saveLogoBtn").addEventListener("click", function(){
   if(!newLogoData){ showToast("Elegí una imagen primero"); return; }
-  customLogo = newLogoData;
-  applyLogo(customLogo);
-  if(sb){
-    await sb.from("site_settings").upsert({key:LOGO_SETTING_KEY, value:customLogo});
-  }
-  showToast("Logo actualizado ✓");
+  withSaveButton(this, async () => {
+    customLogo = newLogoData;
+    applyLogo(customLogo);
+    if(sb){
+      await sb.from("site_settings").upsert({key:LOGO_SETTING_KEY, value:customLogo});
+    }
+  });
 });
 
 document.getElementById("resetLogoBtn").addEventListener("click", async () => {
