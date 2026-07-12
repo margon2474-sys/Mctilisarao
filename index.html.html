@@ -346,6 +346,7 @@ section{padding:120px 0;position:relative;}
 }
 .promo-chip.active{background:var(--gold);color:var(--black);border-color:var(--gold);font-weight:700;}
 .promo-items-label{grid-column:1/-1;font-size:11px;color:var(--muted);margin-top:8px;}
+.promo-items-total{grid-column:1/-1;font-size:13px;font-weight:700;color:var(--gold);margin-top:10px;}
 
 /* ============ MENU / PRODUCTOS ============ */
 .menu-tabs{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:46px;}
@@ -2198,6 +2199,13 @@ document.getElementById("adminSaveCategoriesBtn").addEventListener("click", func
 document.getElementById("adminLogoutBtn4").addEventListener("click", adminLogout);
 
 /* ============ ADMIN: PROMOCIONES ============ */
+function calcPromoItemsTotal(promo){
+  return (promo.items || []).reduce((sum, id) => {
+    const m = MENU.find(item => String(item.id) === String(id));
+    return sum + (m ? m.price : 0);
+  }, 0);
+}
+
 function renderAdminPromoList(){
   const wrap = document.getElementById("adminPromoList");
   const activeMenu = MENU.filter(m => !m.paused);
@@ -2219,6 +2227,7 @@ function renderAdminPromoList(){
           </div>
         `).join("") : `<span style="font-size:11.5px;color:var(--muted);">Todavía no tenés productos cargados en el menú.</span>`}
       </div>
+      <div class="promo-items-total" data-role="itemsTotal">Suma de los productos elegidos: ${money(calcPromoItemsTotal(p))}</div>
     </div>
   `).join("");
 }
@@ -2240,6 +2249,11 @@ document.getElementById("adminPromoList").addEventListener("click", e => {
     PROMOS[idx].items.push(item.id);
     chip.classList.add("active");
   }
+
+  const total = calcPromoItemsTotal(PROMOS[idx]);
+  PROMOS[idx].oldPrice = total || null;
+  row.querySelector('[data-role="oldPrice"]').value = total || "";
+  row.querySelector('[data-role="itemsTotal"]').textContent = `Suma de los productos elegidos: ${money(total)}`;
 });
 
 document.getElementById("adminPromoList").addEventListener("change", e => {
