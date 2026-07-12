@@ -1092,7 +1092,11 @@ a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visib
 
     <!-- MENU Y PRECIOS -->
     <div id="adminTabMenu">
-      <div class="admin-note">Tocá la foto para subir una imagen del producto. Usá "Nuevo" para que aparezca en Novedades, y "Pausar" para ocultarlo del menú sin borrarlo (por ejemplo si te quedaste sin stock).</div>
+      <div class="admin-note">Tocá la foto para subir una imagen del producto. Usá "Nuevo" para que aparezca en Novedades, y "Pausar" para ocultarlo del menú sin borrarlo (por ejemplo si te quedaste sin stock). Para ordenar los productos (▲▼), primero filtrá por categoría acá abajo: así solo mové productos dentro de esa misma categoría, sin tener que saltar sobre los de otras.</div>
+      <div class="field" style="max-width:260px;margin-bottom:14px;">
+        <label>Filtrar por categoría (para ordenar)</label>
+        <select id="menuCatFilter"><option value="all">Todas las categorías</option></select>
+      </div>
       <div id="adminMenuList"></div>
       <div class="admin-save-bar">
         <button class="btn btn-gold" id="adminSaveBtn">💾 Guardar cambios</button>
@@ -1833,6 +1837,7 @@ document.getElementById("adminLoginForm").addEventListener("submit", async funct
 
   adminLoginOverlay.classList.remove("open");
   adminPanelOverlay.classList.add("open");
+  populateMenuCatFilter();
   renderAdminMenuList();
   renderAdminCategories();
   populateNewItemCatSelect();
@@ -1870,13 +1875,26 @@ function itemThumbHtml(item){
   return item.icon || "🍔";
 }
 
+function populateMenuCatFilter(){
+  const sel = document.getElementById("menuCatFilter");
+  if(!sel) return;
+  const prev = sel.value || "all";
+  sel.innerHTML = `<option value="all">Todas las categorías</option>` +
+    CATEGORIES.map(c => `<option value="${c.slug}">${c.icon||"🍽️"} ${escapeHtml(c.label)}</option>`).join("");
+  if([...sel.options].some(o => o.value === prev)) sel.value = prev;
+}
+
 function renderAdminMenuList(){
   const wrap = document.getElementById("adminMenuList");
-  wrap.innerHTML = MENU.map((item, idx) => `
+  const filter = document.getElementById("menuCatFilter") ? document.getElementById("menuCatFilter").value : "all";
+  const indices = MENU.map((_, i) => i).filter(i => filter === "all" || MENU[i].cat === filter);
+  wrap.innerHTML = indices.map((idx, pos) => {
+    const item = MENU[idx];
+    return `
     <div class="admin-item-row menu-row${item.paused ? " paused-row" : ""}" data-idx="${idx}">
       <div class="reorder-controls">
-        <button class="reorder-btn" data-role="up" title="Subir" ${idx===0 ? "disabled" : ""}>▲</button>
-        <button class="reorder-btn" data-role="down" title="Bajar" ${idx===MENU.length-1 ? "disabled" : ""}>▼</button>
+        <button class="reorder-btn" data-role="up" title="Subir" ${pos===0 ? "disabled" : ""}>▲</button>
+        <button class="reorder-btn" data-role="down" title="Bajar" ${pos===indices.length-1 ? "disabled" : ""}>▼</button>
       </div>
       <div class="admin-thumb" data-role="thumb" title="Click para cambiar la foto">${itemThumbHtml(item)}</div>
       <div style="display:flex;flex-direction:column;gap:6px;">
@@ -1893,7 +1911,25 @@ function renderAdminMenuList(){
       <button class="del-btn" data-role="del">Eliminar</button>
       <input type="file" accept="image/*" data-role="fileInput" style="display:none;">
     </div>
-  `).join("");
+  `;
+  }).join("");
+}
+
+function moveMenuItem(realIdx, direction){
+  const filter = document.getElementById("menuCatFilter") ? document.getElementById("menuCatFilter").value : "all";
+  if(filter === "all"){
+    const swapIdx = realIdx + direction;
+    if(swapIdx < 0 || swapIdx >= MENU.length) return;
+    [MENU[realIdx], MENU[swapIdx]] = [MENU[swapIdx], MENU[realIdx]];
+  } else {
+    const catIndices = MENU.map((m, i) => ({m, i})).filter(o => o.m.cat === filter).map(o => o.i);
+    const posInCat = catIndices.indexOf(realIdx);
+    const swapPos = posInCat + direction;
+    if(posInCat === -1 || swapPos < 0 || swapPos >= catIndices.length) return;
+    const swapIdx = catIndices[swapPos];
+    [MENU[realIdx], MENU[swapIdx]] = [MENU[swapIdx], MENU[realIdx]];
+  }
+  renderAdminMenuList();
 }
 
 document.getElementById("adminMenuList").addEventListener("click", e => {
@@ -1908,14 +1944,16 @@ document.getElementById("adminMenuList").addEventListener("click", e => {
     if(!confirm(`¿Eliminar "${MENU[idx].name}" del menú?`)) return;
     deleteMenuItem(idx);
   }
-  if(e.target.dataset.role === "up" && idx > 0){
-    [MENU[idx-1], MENU[idx]] = [MENU[idx], MENU[idx-1]];
-    renderAdminMenuList();
+  if(e.target.dataset.role === "up"){
+    moveMenuItem(idx, -1);
   }
-  if(e.target.dataset.role === "down" && idx < MENU.length - 1){
-    [MENU[idx+1], MENU[idx]] = [MENU[idx], MENU[idx+1]];
-    renderAdminMenuList();
+  if(e.target.dataset.role === "down"){
+    moveMenuItem(idx, 1);
   }
+});
+
+document.getElementById("menuCatFilter").addEventListener("change", () => {
+  renderAdminMenuList();
 });
 
 async function deleteMenuItem(idx){
@@ -2153,6 +2191,7 @@ document.getElementById("adminSaveCategoriesBtn").addEventListener("click", func
     renderMenuTabs();
     renderSpecGrid();
     populateNewItemCatSelect();
+    populateMenuCatFilter();
     renderMenu();
   });
 });
@@ -2175,10 +2214,9 @@ function renderAdminPromoList(){
       <div class="promo-items-label">📷 Elegí qué productos ya cargados forman esta promo (se muestran sus fotos):</div>
       <div class="promo-items-picker">
         ${activeMenu.length ? activeMenu.map(m => `
-          <label class="promo-chip${(p.items||[]).includes(m.id) ? " active" : ""}" data-pid="${m.id}">
-            <input type="checkbox" style="display:none;" ${(p.items||[]).includes(m.id) ? "checked" : ""}>
+          <div class="promo-chip${(p.items||[]).includes(m.id) ? " active" : ""}" data-pid="${m.id}">
             ${m.icon||"🍔"} ${escapeHtml(m.name)}
-          </label>
+          </div>
         `).join("") : `<span style="font-size:11.5px;color:var(--muted);">Todavía no tenés productos cargados en el menú.</span>`}
       </div>
     </div>
@@ -2198,11 +2236,9 @@ document.getElementById("adminPromoList").addEventListener("click", e => {
   if(pos >= 0){
     PROMOS[idx].items.splice(pos, 1);
     chip.classList.remove("active");
-    chip.querySelector("input").checked = false;
   } else {
     PROMOS[idx].items.push(item.id);
     chip.classList.add("active");
-    chip.querySelector("input").checked = true;
   }
 });
 
