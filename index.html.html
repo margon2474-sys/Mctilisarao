@@ -78,8 +78,14 @@ button{font-family:inherit;cursor:pointer;border:none;}
 .reveal-scale.in{opacity:1;transform:scale(1);}
 
 /* ============ NAVBAR ============ */
+.delivery-banner{
+  position:fixed;top:0;left:0;right:0;z-index:1001;
+  height:32px;display:flex;align-items:center;justify-content:center;
+  background:var(--gold);color:var(--black);text-align:center;
+  font-size:12.5px;font-weight:700;letter-spacing:.3px;padding:0 12px;
+}
 .navbar{
-  position:fixed;top:0;left:0;right:0;z-index:1000;
+  position:fixed;top:32px;left:0;right:0;z-index:1000;
   padding:20px 0;
   transition:background .4s var(--ease), padding .4s var(--ease), box-shadow .4s var(--ease), backdrop-filter .4s var(--ease);
 }
@@ -154,7 +160,7 @@ button{font-family:inherit;cursor:pointer;border:none;}
 .hero{
   position:relative;min-height:100vh;display:flex;align-items:center;
   overflow:hidden;background:radial-gradient(ellipse at 50% 20%, #241512 0%, var(--black) 60%);
-  padding-top:100px;
+  padding-top:132px;
 }
 .hero-grid-bg{
   position:absolute;inset:0;
@@ -496,16 +502,6 @@ footer{background:var(--charcoal-2);padding:70px 0 26px;border-top:1px solid rgb
 }
 
 /* ============ FLOATING BUTTONS ============ */
-.fab-wa{
-  position:fixed;bottom:26px;left:26px;z-index:900;
-  width:60px;height:60px;border-radius:50%;background:#25D366;
-  display:flex;align-items:center;justify-content:center;font-size:28px;
-  box-shadow:0 10px 30px rgba(37,211,102,.45);
-  animation:fabPulse 2.4s infinite;
-}
-.fab-wa:hover{transform:scale(1.08);}
-@keyframes fabPulse{0%,100%{box-shadow:0 10px 30px rgba(37,211,102,.45);}50%{box-shadow:0 10px 30px rgba(37,211,102,.7),0 0 0 10px rgba(37,211,102,.12);}}
-
 .fab-cart{
   position:fixed;bottom:26px;right:26px;z-index:900;
   width:60px;height:60px;border-radius:50%;background:var(--red);
@@ -646,7 +642,7 @@ footer{background:var(--charcoal-2);padding:70px 0 26px;border-top:1px solid rgb
   .admin-item-row .admin-thumb{grid-area:thumb;}
   .admin-item-row.promo-row{grid-template-columns:1fr;}
   .admin-item-row.gallery-row{grid-template-columns:48px 1fr;}
-  .admin-item-row.menu-row{grid-template-columns:48px 1fr;}
+  .admin-item-row.menu-row{grid-template-columns:26px 44px 1fr;}
 }
 
 /* ============ BADGES / NOVEDADES / PAUSA ============ */
@@ -670,7 +666,14 @@ footer{background:var(--charcoal-2);padding:70px 0 26px;border-top:1px solid rgb
 /* ============ ADMIN: extra tabs, filas, controles ============ */
 .admin-item-row.promo-row{grid-template-columns:1.3fr 90px 90px 90px auto;}
 .admin-item-row.gallery-row{grid-template-columns:64px 1.2fr 1fr auto;}
-.admin-item-row.menu-row{grid-template-columns:56px 1.3fr 85px 95px 145px auto;}
+.admin-item-row.menu-row{grid-template-columns:34px 56px 1.3fr 85px 95px 145px auto;}
+.reorder-controls{display:flex;flex-direction:column;gap:3px;justify-content:center;}
+.reorder-btn{
+  width:28px;height:22px;border-radius:5px;border:1px solid rgba(255,255,255,.12);
+  background:var(--charcoal-2);color:var(--muted);cursor:pointer;font-size:10px;line-height:1;padding:0;
+}
+.reorder-btn:hover:not(:disabled){border-color:var(--gold);color:var(--gold);}
+.reorder-btn:disabled{opacity:.25;cursor:not-allowed;}
 .admin-item-row textarea{background:var(--charcoal-2);border:1px solid rgba(255,255,255,.08);border-radius:8px;color:#fff;padding:9px 10px;font-size:13px;width:100%;resize:vertical;min-height:40px;font-family:inherit;}
 .admin-flag{display:flex;align-items:center;gap:6px;font-size:11.5px;color:var(--muted);white-space:nowrap;}
 .admin-flag input{width:auto;accent-color:var(--gold);}
@@ -723,7 +726,7 @@ a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visib
   .nav-actions .btn-wa span{display:none;}
   .nav-burger{display:flex;}
   section{padding:80px 0;}
-  .hero{padding-top:120px;min-height:auto;padding-bottom:80px;}
+  .hero{padding-top:152px;min-height:auto;padding-bottom:80px;}
   .hero-stats{gap:28px;}
   .why-grid{grid-template-columns:repeat(2,1fr);}
   .gallery-grid{grid-template-columns:repeat(2,1fr);grid-auto-rows:150px;}
@@ -745,6 +748,7 @@ a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visib
 <body>
 
 <!-- ============ NAVBAR ============ -->
+<div class="delivery-banner">🚚 Delivery sin costo en todos los pedidos</div>
 <nav class="navbar" id="navbar">
   <div class="container nav-inner">
     <a href="#inicio" class="nav-logo">
@@ -941,7 +945,7 @@ a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visib
         </div>
         <div class="loc-row">
           <div class="ic">🕒</div>
-          <div><h4>Horarios</h4><p>Lun a Dom · 19:00 a 00:30 hs</p></div>
+          <div><h4>Horarios</h4><p>Lun a Dom · 20:00 a 01:00 hs</p></div>
         </div>
         <div class="loc-row">
           <div class="ic">📞</div>
@@ -1003,7 +1007,7 @@ a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visib
         <h5>Horarios</h5>
         <ul>
           <li><a href="#">Lun a Dom</a></li>
-          <li><a href="#">19:00 a 00:30 hs</a></li>
+          <li><a href="#">20:00 a 01:00 hs</a></li>
         </ul>
       </div>
       <div class="footer-col">
@@ -1022,7 +1026,6 @@ a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visib
 </footer>
 
 <!-- ============ FLOATING BUTTONS ============ -->
-<a href="https://wa.me/5492664864302?text=Hola%20MC%20Tili!%20Quiero%20hacer%20un%20pedido%20%F0%9F%8D%94" target="_blank" rel="noopener" class="fab-wa" aria-label="Pedir por WhatsApp">💬</a>
 <button class="fab-cart" id="fabCart" aria-label="Ver carrito" style="position:fixed;">
   🛒<span class="badge" id="cartBadge" style="display:none;">0</span>
 </button>
@@ -1234,11 +1237,11 @@ function catLabel(slug){
   return c ? c.label : slug;
 }
 
-/* ============ HORARIO DE ATENCIÓN (19:00 a 00:30, todos los días) ============ */
+/* ============ HORARIO DE ATENCIÓN (20:00 a 01:00, todos los días) ============ */
 function isOpenNow(){
   const now = new Date();
   const h = now.getHours(), m = now.getMinutes();
-  return (h >= 19) || (h === 0 && m <= 30);
+  return (h >= 20) || (h === 0) || (h === 1 && m === 0);
 }
 
 function updateOpenStatus(){
@@ -1250,7 +1253,7 @@ function updateOpenStatus(){
     text.textContent = "Abierto ahora · Pedí y retirá en 20 min";
   } else {
     dot.classList.add("closed");
-    text.textContent = "Cerrado ahora · Abrimos a las 19:00 hs";
+    text.textContent = "Cerrado ahora · Abrimos a las 20:00 hs";
   }
 }
 updateOpenStatus();
@@ -1871,6 +1874,10 @@ function renderAdminMenuList(){
   const wrap = document.getElementById("adminMenuList");
   wrap.innerHTML = MENU.map((item, idx) => `
     <div class="admin-item-row menu-row${item.paused ? " paused-row" : ""}" data-idx="${idx}">
+      <div class="reorder-controls">
+        <button class="reorder-btn" data-role="up" title="Subir" ${idx===0 ? "disabled" : ""}>▲</button>
+        <button class="reorder-btn" data-role="down" title="Bajar" ${idx===MENU.length-1 ? "disabled" : ""}>▼</button>
+      </div>
       <div class="admin-thumb" data-role="thumb" title="Click para cambiar la foto">${itemThumbHtml(item)}</div>
       <div style="display:flex;flex-direction:column;gap:6px;">
         <input type="text" data-role="name" value="${(item.name||"").replace(/"/g,'&quot;')}" placeholder="Nombre">
@@ -1900,6 +1907,14 @@ document.getElementById("adminMenuList").addEventListener("click", e => {
   if(e.target.dataset.role === "del"){
     if(!confirm(`¿Eliminar "${MENU[idx].name}" del menú?`)) return;
     deleteMenuItem(idx);
+  }
+  if(e.target.dataset.role === "up" && idx > 0){
+    [MENU[idx-1], MENU[idx]] = [MENU[idx], MENU[idx-1]];
+    renderAdminMenuList();
+  }
+  if(e.target.dataset.role === "down" && idx < MENU.length - 1){
+    [MENU[idx+1], MENU[idx]] = [MENU[idx], MENU[idx+1]];
+    renderAdminMenuList();
   }
 });
 
@@ -1996,15 +2011,18 @@ document.getElementById("adminMenuList").addEventListener("change", e => {
 document.getElementById("adminSaveBtn").addEventListener("click", function(){
   withSaveButton(this, async () => {
     if(sb){
-      for(const item of MENU){
+      for(let i=0;i<MENU.length;i++){
+        const item = MENU[i];
         if(!item.id) continue;
-        await sb.from("menu_items").update({
+        const {error} = await sb.from("menu_items").update({
           name:item.name, description:item.desc, price:item.price, category:item.cat,
-          image_url:item.img || null, is_new: !!item.isNew, is_paused: !!item.paused
+          image_url:item.img || null, is_new: !!item.isNew, is_paused: !!item.paused, sort_order:i
         }).eq("id", item.id);
+        if(error) throw error;
       }
       const featuredIds = MENU.filter(item => item.featured).map(item => item.id);
-      await sb.from("site_settings").upsert({key: FEATURED_SETTING_KEY, value: JSON.stringify(featuredIds)});
+      const {error: fErr} = await sb.from("site_settings").upsert({key: FEATURED_SETTING_KEY, value: JSON.stringify(featuredIds)});
+      if(fErr) throw fErr;
     }
     renderMenu();
   });
@@ -2128,7 +2146,10 @@ document.getElementById("addCategoryBtn").addEventListener("click", () => {
 
 document.getElementById("adminSaveCategoriesBtn").addEventListener("click", function(){
   withSaveButton(this, async () => {
-    if(sb) await sb.from("site_settings").upsert({key: CATEGORIES_SETTING_KEY, value: JSON.stringify(CATEGORIES)});
+    if(sb){
+      const {error} = await sb.from("site_settings").upsert({key: CATEGORIES_SETTING_KEY, value: JSON.stringify(CATEGORIES)});
+      if(error) throw error;
+    }
     renderMenuTabs();
     renderSpecGrid();
     populateNewItemCatSelect();
@@ -2251,7 +2272,8 @@ document.getElementById("adminSavePromosBtn").addEventListener("click", function
       }
       const promoItemsMap = {};
       PROMOS.forEach(p => { if(p.id) promoItemsMap[p.id] = p.items || []; });
-      await sb.from("site_settings").upsert({key: PROMO_ITEMS_SETTING_KEY, value: JSON.stringify(promoItemsMap)});
+      const {error: piErr} = await sb.from("site_settings").upsert({key: PROMO_ITEMS_SETTING_KEY, value: JSON.stringify(promoItemsMap)});
+      if(piErr) throw piErr;
     }
     renderPromos();
   });
@@ -2437,7 +2459,8 @@ document.getElementById("saveLogoBtn").addEventListener("click", function(){
     customLogo = newLogoData;
     applyLogo(customLogo);
     if(sb){
-      await sb.from("site_settings").upsert({key:LOGO_SETTING_KEY, value:customLogo});
+      const {error} = await sb.from("site_settings").upsert({key:LOGO_SETTING_KEY, value:customLogo});
+      if(error) throw error;
     }
   });
 });
