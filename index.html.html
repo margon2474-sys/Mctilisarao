@@ -1768,8 +1768,57 @@ document.getElementById("reviewForm").addEventListener("submit", async function(
   paintStars(selectedStars);
 });
 
+/* ============ CACHÉ LOCAL (para que la 2da visita cargue al instante) ============ */
+const CACHE_KEY = "mctili_site_cache_v1";
+
+function loadFromCache(){
+  try{
+    const raw = localStorage.getItem(CACHE_KEY);
+    if(!raw) return null;
+    return JSON.parse(raw);
+  }catch(e){ return null; }
+}
+
+function saveToCache(){
+  try{
+    localStorage.setItem(CACHE_KEY, JSON.stringify({
+      MENU, PROMOS, GALLERY, CATEGORIES, customLogo, savedAt: Date.now()
+    }));
+  }catch(e){ /* si falla (ej. modo privado), simplemente no cacheamos */ }
+}
+
+function renderAllPublic(){
+  renderMenuTabs();
+  renderSpecGrid();
+  populateNewItemCatSelect();
+  renderMenu();
+  renderPromos();
+  renderGallery();
+}
+
+function hidePageLoader(){
+  const loader = document.getElementById("pageLoader");
+  if(loader){
+    loader.classList.add("hide");
+    setTimeout(() => loader.remove(), 500);
+  }
+}
+
 /* ============ CARGA INICIAL DE DATOS ============ */
 async function initData(){
+  // 1) Si hay algo guardado de una visita anterior, lo mostramos YA, sin esperar la red
+  const cached = loadFromCache();
+  if(cached){
+    MENU = cached.MENU || [...FALLBACK_MENU];
+    PROMOS = cached.PROMOS || [...FALLBACK_PROMOS];
+    GALLERY = cached.GALLERY || [...FALLBACK_GALLERY];
+    CATEGORIES = cached.CATEGORIES || [...DEFAULT_CATEGORIES];
+    if(cached.customLogo){ customLogo = cached.customLogo; applyLogo(customLogo); }
+    renderAllPublic();
+    hidePageLoader();
+  }
+
+  // 2) En simultáneo (o si no había caché), buscamos los datos reales y actualizados
   if(sb){
     try{
       const [menuRes, promoRes, galRes, logoRes, categoriesRes, featuredRes, promoItemsRes] = await Promise.all([
@@ -1819,27 +1868,22 @@ async function initData(){
       } else {
         CATEGORIES = [...DEFAULT_CATEGORIES];
       }
+
+      saveToCache();
     }catch(err){
       console.error("No se pudo conectar con Supabase, usando datos locales:", err);
-      MENU = [...FALLBACK_MENU]; PROMOS = [...FALLBACK_PROMOS]; GALLERY = [...FALLBACK_GALLERY]; CATEGORIES = [...DEFAULT_CATEGORIES];
+      if(!cached){
+        MENU = [...FALLBACK_MENU]; PROMOS = [...FALLBACK_PROMOS]; GALLERY = [...FALLBACK_GALLERY]; CATEGORIES = [...DEFAULT_CATEGORIES];
+      }
     }
-  } else {
+  } else if(!cached){
     MENU = [...FALLBACK_MENU]; PROMOS = [...FALLBACK_PROMOS]; GALLERY = [...FALLBACK_GALLERY]; CATEGORIES = [...DEFAULT_CATEGORIES];
   }
-  await loadReviewsData();
-  renderMenuTabs();
-  renderSpecGrid();
-  populateNewItemCatSelect();
-  renderMenu();
-  renderPromos();
-  renderGallery();
-  renderReviews();
 
-  const loader = document.getElementById("pageLoader");
-  if(loader){
-    loader.classList.add("hide");
-    setTimeout(() => loader.remove(), 500);
-  }
+  await loadReviewsData();
+  renderAllPublic();
+  renderReviews();
+  hidePageLoader();
 }
 initData();
 
