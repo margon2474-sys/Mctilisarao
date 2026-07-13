@@ -742,7 +742,10 @@ a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visib
   .nav-links{display:none;}
   .nav-actions .btn-wa span{display:none;}
   .nav-burger{display:flex;}
-  section{padding:80px 0;}
+  section{padding:56px 0;}
+  .section-sub{margin-bottom:28px;}
+  .section-title{margin-bottom:10px;}
+  .eyebrow{margin-bottom:10px;}
   .hero{padding-top:152px;min-height:auto;padding-bottom:80px;}
   .hero-stats{gap:28px;}
   .why-grid{grid-template-columns:repeat(2,1fr);}
@@ -1212,9 +1215,15 @@ a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visib
    ============================================================ */
 const SUPABASE_URL = "https://seegtowqhkfyllzqsraj.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_6TBm3N9mKol47mH7gI5LRw_4is3B97C";
-const sb = (SUPABASE_URL.startsWith("http"))
-  ? supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
-  : null;
+let sb = null;
+try{
+  if(SUPABASE_URL.startsWith("http") && typeof supabase !== "undefined"){
+    sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  }
+}catch(err){
+  console.error("No se pudo inicializar Supabase, se usarán datos locales:", err);
+  sb = null;
+}
 
 const WA_NUMBER = "5492664864302";
 
