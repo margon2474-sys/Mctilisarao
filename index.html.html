@@ -1872,6 +1872,7 @@ function hidePageLoader(){
 }
 
 /* ============ CARGA INICIAL DE DATOS ============ */
+let dataLoadCompleted = false;
 async function initData(){
   // 1) Si hay algo guardado de una visita anterior, lo mostramos YA, sin esperar la red
   const cached = loadFromCache();
@@ -1899,7 +1900,7 @@ async function initData(){
         sb.from("site_settings").select("value").eq("key", PROMO_ITEMS_SETTING_KEY).maybeSingle()
       ]);
 
-      MENU = (!menuRes.error && menuRes.data && menuRes.data.length)
+      MENU = (!menuRes.error && Array.isArray(menuRes.data))
         ? menuRes.data.map(r => ({id:r.id, name:r.name, desc:r.description, price:r.price, cat:r.category, icon:r.icon||"🍔", img:r.image_url, isNew:r.is_new, paused:r.is_paused}))
         : [...FALLBACK_MENU];
 
@@ -1914,12 +1915,12 @@ async function initData(){
         try{ promoItemsMap = JSON.parse(promoItemsRes.data.value); }catch(e){ promoItemsMap = {}; }
       }
 
-      PROMOS = (!promoRes.error && promoRes.data && promoRes.data.length)
+      PROMOS = (!promoRes.error && Array.isArray(promoRes.data))
         ? promoRes.data.map(r => ({id:r.id, ribbon:r.ribbon, title:r.title, desc:r.description, oldPrice:r.old_price, newPrice:r.new_price, paused:r.is_paused}))
         : [...FALLBACK_PROMOS];
       PROMOS.forEach(p => { p.items = promoItemsMap[p.id] || []; });
 
-      GALLERY = (!galRes.error && galRes.data && galRes.data.length)
+      GALLERY = (!galRes.error && Array.isArray(galRes.data))
         ? galRes.data.map(r => ({id:r.id, label:r.label, big:r.is_big, mediaType:r.media_type, mediaValue:r.media_value, linkUrl:r.link_url}))
         : [...FALLBACK_GALLERY];
 
@@ -1951,6 +1952,7 @@ async function initData(){
   await loadReviewsData();
   renderAllPublic();
   renderReviews();
+  dataLoadCompleted = true;
   if(!cached){
     await waitForImages();
     hidePageLoader();
@@ -1962,8 +1964,7 @@ initData();
 setTimeout(() => {
   const loader = document.getElementById("pageLoader");
   if(loader) loader.classList.add("hide");
-  const menuGrid = document.getElementById("menuGrid");
-  if(menuGrid && menuGrid.children.length === 0){
+  if(!dataLoadCompleted){
     console.warn("La carga de datos no terminó a tiempo, mostrando datos de respaldo.");
     if(!MENU.length) MENU = [...FALLBACK_MENU];
     if(!PROMOS.length) PROMOS = [...FALLBACK_PROMOS];
@@ -2159,7 +2160,10 @@ async function withSaveButton(btn, fn){
   }
 }
 
-function compressImage(file, maxDim = 1280, quality = 0.72, mimeType = "image/jpeg"){
+/* ============ SUBIDA DE IMÁGENES A SUPABASE STORAGE (con respaldo si falla) ============ */
+const IMAGE_BUCKET = "site-images";
+
+function compressImageToBlob(file, maxDim = 1280, quality = 0.72, mimeType = "image/jpeg"){
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = e => {
@@ -2180,7 +2184,9 @@ function compressImage(file, maxDim = 1280, quality = 0.72, mimeType = "image/jp
         canvas.height = height;
         const ctx = canvas.getContext("2d");
         ctx.drawImage(img, 0, 0, width, height);
-        resolve(canvas.toDataURL(mimeType, quality));
+        canvas.toBlob(blob => {
+          if(blob) resolve(blob); else reject(new Error("No se pudo generar la imagen"));
+        }, mimeType, quality);
       };
       img.onerror = () => reject(new Error("No se pudo procesar la imagen"));
       img.src = e.target.result;
@@ -2188,6 +2194,33 @@ function compressImage(file, maxDim = 1280, quality = 0.72, mimeType = "image/jp
     reader.onerror = () => reject(new Error("No se pudo leer el archivo"));
     reader.readAsDataURL(file);
   });
+}
+
+function blobToDataUrl(blob){
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = () => reject(new Error("No se pudo convertir la imagen"));
+    reader.readAsDataURL(blob);
+  });
+}
+
+async function uploadImageAndGetUrl(file, folder, maxDim = 1280, quality = 0.72, mimeType = "image/jpeg"){
+  const blob = await compressImageToBlob(file, maxDim, quality, mimeType);
+  if(sb){
+    try{
+      const ext = mimeType === "image/png" ? "png" : "jpg";
+      const fileName = `${folder}/${Date.now()}_${Math.random().toString(36).slice(2,8)}.${ext}`;
+      const { error: upErr } = await sb.storage.from(IMAGE_BUCKET).upload(fileName, blob, { contentType: mimeType, upsert: true });
+      if(upErr) throw upErr;
+      const { data } = sb.storage.from(IMAGE_BUCKET).getPublicUrl(fileName);
+      if(data && data.publicUrl) return data.publicUrl;
+    }catch(err){
+      console.error("No se pudo subir a Supabase Storage, se guarda la imagen embebida como respaldo:", err);
+    }
+  }
+  // Respaldo: si falla la subida al storage (o no hay bucket configurado todavía), seguimos funcionando como antes
+  return await blobToDataUrl(blob);
 }
 
 document.getElementById("adminMenuList").addEventListener("change", e => {
@@ -2198,8 +2231,8 @@ document.getElementById("adminMenuList").addEventListener("change", e => {
 
   if(role === "fileInput" && e.target.files[0]){
     const file = e.target.files[0];
-    compressImage(file).then(dataUrl => {
-      MENU[idx].img = dataUrl;
+    uploadImageAndGetUrl(file, "products").then(url => {
+      MENU[idx].img = url;
       row.querySelector('[data-role="thumb"]').innerHTML = itemThumbHtml(MENU[idx]);
     }).catch(() => showToast("No se pudo procesar la imagen, probá con otra foto"));
     return;
@@ -2242,8 +2275,8 @@ let newItemImgData = null;
 document.getElementById("newItemImgInput").addEventListener("change", e => {
   const file = e.target.files[0];
   if(!file) return;
-  compressImage(file).then(dataUrl => {
-    newItemImgData = dataUrl;
+  uploadImageAndGetUrl(file, "products").then(url => {
+    newItemImgData = url;
     newItemThumb.innerHTML = `<img src="${newItemImgData}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:10px;">`;
   }).catch(() => showToast("No se pudo procesar la imagen, probá con otra foto"));
 });
@@ -2547,9 +2580,9 @@ document.getElementById("adminGalleryList").addEventListener("change", e => {
 
   if(role === "photoInput" && e.target.files[0]){
     const file = e.target.files[0];
-    compressImage(file, 1280, 0.72).then(dataUrl => {
+    uploadImageAndGetUrl(file, "gallery", 1280, 0.72).then(url => {
       GALLERY[idx].mediaType = "image";
-      GALLERY[idx].mediaValue = dataUrl;
+      GALLERY[idx].mediaValue = url;
       GALLERY[idx].linkUrl = "";
       row.querySelector('[data-role="thumb"]').innerHTML = galleryThumbHtml(GALLERY[idx]);
     }).catch(() => showToast("No se pudo procesar la imagen, probá con otra foto"));
@@ -2666,8 +2699,8 @@ document.getElementById("adminReviewsList").addEventListener("click", async e =>
 document.getElementById("logoInput").addEventListener("change", e => {
   const file = e.target.files[0];
   if(!file) return;
-  compressImage(file, 600, 0.9, "image/png").then(dataUrl => {
-    newLogoData = dataUrl;
+  uploadImageAndGetUrl(file, "logo", 600, 0.9, "image/png").then(url => {
+    newLogoData = url;
     document.getElementById("logoPreview").innerHTML = `<img src="${newLogoData}" alt="">`;
   }).catch(() => showToast("No se pudo procesar la imagen, probá con otra foto"));
 });
