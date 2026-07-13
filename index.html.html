@@ -1812,7 +1812,7 @@ document.getElementById("reviewForm").addEventListener("submit", async function(
 });
 
 /* ============ CACHÉ LOCAL (para que la 2da visita cargue al instante) ============ */
-const CACHE_KEY = "mctili_site_cache_v1";
+const CACHE_KEY = "mctili_site_cache_v2";
 
 function loadFromCache(){
   try{
@@ -1874,20 +1874,8 @@ function hidePageLoader(){
 /* ============ CARGA INICIAL DE DATOS ============ */
 let dataLoadCompleted = false;
 async function initData(){
-  // 1) Si hay algo guardado de una visita anterior, lo mostramos YA, sin esperar la red
-  const cached = loadFromCache();
-  if(cached){
-    MENU = cached.MENU || [...FALLBACK_MENU];
-    PROMOS = cached.PROMOS || [...FALLBACK_PROMOS];
-    GALLERY = cached.GALLERY || [...FALLBACK_GALLERY];
-    CATEGORIES = cached.CATEGORIES || [...DEFAULT_CATEGORIES];
-    if(cached.customLogo){ customLogo = cached.customLogo; applyLogo(customLogo); }
-    renderAllPublic();
-    await waitForImages();
-    hidePageLoader();
-  }
+  const cached = loadFromCache(); // solo se usa como respaldo si falla la conexión, nunca para mostrar antes de tiempo
 
-  // 2) En simultáneo (o si no había caché), buscamos los datos reales y actualizados
   if(sb){
     try{
       const [menuRes, promoRes, galRes, logoRes, categoriesRes, featuredRes, promoItemsRes] = await Promise.all([
@@ -1902,7 +1890,7 @@ async function initData(){
 
       MENU = (!menuRes.error && Array.isArray(menuRes.data))
         ? menuRes.data.map(r => ({id:r.id, name:r.name, desc:r.description, price:r.price, cat:r.category, icon:r.icon||"🍔", img:r.image_url, isNew:r.is_new, paused:r.is_paused}))
-        : [...FALLBACK_MENU];
+        : (cached && cached.MENU) || [...FALLBACK_MENU];
 
       let featuredIds = [];
       if(featuredRes && !featuredRes.error && featuredRes.data && featuredRes.data.value){
@@ -1917,12 +1905,12 @@ async function initData(){
 
       PROMOS = (!promoRes.error && Array.isArray(promoRes.data))
         ? promoRes.data.map(r => ({id:r.id, ribbon:r.ribbon, title:r.title, desc:r.description, oldPrice:r.old_price, newPrice:r.new_price, paused:r.is_paused}))
-        : [...FALLBACK_PROMOS];
+        : (cached && cached.PROMOS) || [...FALLBACK_PROMOS];
       PROMOS.forEach(p => { p.items = promoItemsMap[p.id] || []; });
 
       GALLERY = (!galRes.error && Array.isArray(galRes.data))
         ? galRes.data.map(r => ({id:r.id, label:r.label, big:r.is_big, mediaType:r.media_type, mediaValue:r.media_value, linkUrl:r.link_url}))
-        : [...FALLBACK_GALLERY];
+        : (cached && cached.GALLERY) || [...FALLBACK_GALLERY];
 
       if(logoRes && logoRes.data && logoRes.data.value){
         customLogo = logoRes.data.value;
@@ -1941,11 +1929,23 @@ async function initData(){
       saveToCache();
     }catch(err){
       console.error("No se pudo conectar con Supabase, usando datos locales:", err);
-      if(!cached){
+      if(cached){
+        MENU = cached.MENU || [...FALLBACK_MENU];
+        PROMOS = cached.PROMOS || [...FALLBACK_PROMOS];
+        GALLERY = cached.GALLERY || [...FALLBACK_GALLERY];
+        CATEGORIES = cached.CATEGORIES || [...DEFAULT_CATEGORIES];
+        if(cached.customLogo){ customLogo = cached.customLogo; applyLogo(customLogo); }
+      } else {
         MENU = [...FALLBACK_MENU]; PROMOS = [...FALLBACK_PROMOS]; GALLERY = [...FALLBACK_GALLERY]; CATEGORIES = [...DEFAULT_CATEGORIES];
       }
     }
-  } else if(!cached){
+  } else if(cached){
+    MENU = cached.MENU || [...FALLBACK_MENU];
+    PROMOS = cached.PROMOS || [...FALLBACK_PROMOS];
+    GALLERY = cached.GALLERY || [...FALLBACK_GALLERY];
+    CATEGORIES = cached.CATEGORIES || [...DEFAULT_CATEGORIES];
+    if(cached.customLogo){ customLogo = cached.customLogo; applyLogo(customLogo); }
+  } else {
     MENU = [...FALLBACK_MENU]; PROMOS = [...FALLBACK_PROMOS]; GALLERY = [...FALLBACK_GALLERY]; CATEGORIES = [...DEFAULT_CATEGORIES];
   }
 
@@ -1953,10 +1953,8 @@ async function initData(){
   renderAllPublic();
   renderReviews();
   dataLoadCompleted = true;
-  if(!cached){
-    await waitForImages();
-    hidePageLoader();
-  }
+  await waitForImages();
+  hidePageLoader();
 }
 initData();
 
