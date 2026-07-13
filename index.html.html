@@ -1839,7 +1839,7 @@ function renderAllPublic(){
   renderGallery();
 }
 
-function waitForImages(maxWaitMs = 4000){
+function waitForImages(maxWaitMs = 900){
   return new Promise(resolve => {
     const imgs = Array.from(document.querySelectorAll("img"));
     if(!imgs.length){ resolve(); return; }
