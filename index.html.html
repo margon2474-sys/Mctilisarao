@@ -1207,6 +1207,21 @@ a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visib
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
+/* ============ CAPTURADOR DE ERRORES (para diagnosticar si algo rompe la página) ============ */
+window.addEventListener("error", function(e){
+  try{
+    const loader = document.getElementById("pageLoader");
+    if(loader) loader.classList.add("hide");
+    if(document.getElementById("jsErrorBanner")) return;
+    const banner = document.createElement("div");
+    banner.id = "jsErrorBanner";
+    banner.style.cssText = "position:fixed;top:0;left:0;right:0;z-index:999999;background:#B32734;color:#fff;padding:14px 16px;font-family:sans-serif;font-size:13px;line-height:1.5;";
+    banner.innerHTML = "⚠️ Hubo un error cargando la página. Mandale a Claude una captura de este mensaje:<br><b>" +
+      (e.message || "Error desconocido") + "</b><br><span style='opacity:.8;'>" + (e.filename ? (e.filename + ":" + e.lineno) : "") + "</span>";
+    document.body.prepend(banner);
+  }catch(_){}
+});
+
 /* ============================================================
    CONFIGURACIÓN DE SUPABASE — COMPLETAR ANTES DE PUBLICAR
    1. Creá un proyecto gratis en https://supabase.com
@@ -1887,10 +1902,19 @@ async function initData(){
 }
 initData();
 
-// Por si algo tarda de más (ej. conexión lenta), no dejar la pantalla de carga trabada para siempre
+// Por si algo tarda de más o se cuelga (ej. falla de conexión con Supabase), no dejar la página en blanco para siempre
 setTimeout(() => {
   const loader = document.getElementById("pageLoader");
   if(loader) loader.classList.add("hide");
+  const menuGrid = document.getElementById("menuGrid");
+  if(menuGrid && menuGrid.children.length === 0){
+    console.warn("La carga de datos no terminó a tiempo, mostrando datos de respaldo.");
+    if(!MENU.length) MENU = [...FALLBACK_MENU];
+    if(!PROMOS.length) PROMOS = [...FALLBACK_PROMOS];
+    if(!GALLERY.length) GALLERY = [...FALLBACK_GALLERY];
+    if(!CATEGORIES.length) CATEGORIES = [...DEFAULT_CATEGORIES];
+    renderAllPublic();
+  }
 }, 8000);
 
 /* ============ ADMIN: LOGIN ============ */
