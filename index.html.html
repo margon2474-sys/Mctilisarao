@@ -1103,12 +1103,12 @@ a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visib
 
 <div class="toast" id="toast"></div>
 
-<!-- Upsell: ofrecer una bebida antes de enviar el pedido -->
+<!-- Upsell: ofrecer bebida y/o postre antes de enviar el pedido -->
 <div class="admin-overlay" id="upsellOverlay">
   <div class="admin-modal">
     <div class="admin-close" id="upsellClose">✕</div>
-    <h3>🥤 ¿Le sumás una bebida?</h3>
-    <p style="color:var(--muted);font-size:13.5px;margin:-14px 0 20px;line-height:1.5;">Todavía no agregaste nada para tomar. Elegí una y la sumamos al pedido.</p>
+    <h3 id="upsellTitle">🥤 ¿Le sumás una bebida?</h3>
+    <p id="upsellSubtitle" style="color:var(--muted);font-size:13.5px;margin:-14px 0 20px;line-height:1.5;">Todavía no agregaste nada para tomar. Elegí una y la sumamos al pedido.</p>
     <div id="upsellDrinksList" style="display:flex;flex-direction:column;gap:10px;margin-bottom:20px;"></div>
     <button class="btn btn-outline" id="upsellSkipBtn">No, gracias · Continuar</button>
   </div>
@@ -1615,28 +1615,65 @@ function updateCartUI(){
   document.getElementById("cartSend").href = `https://wa.me/${WA_NUMBER}?text=${msg}`;
 }
 
-/* ============ UPSELL: OFRECER BEBIDA ANTES DE ENVIAR EL PEDIDO ============ */
+/* ============ UPSELL: OFRECER BEBIDA Y/O POSTRE ANTES DE ENVIAR EL PEDIDO ============ */
+const UPSELL_CATEGORY_SLUGS = ["bebidas", "postres"];
 let upsellDismissed = false;
+let upsellQueue = [];
 
-function cartHasBebida(){
+function cartHasCategory(slug){
   return Object.keys(cart).some(id => {
     const item = MENU.find(m => String(m.id) === String(id));
-    return item && item.cat === "bebidas";
+    return item && item.cat === slug;
   });
 }
 
-document.getElementById("cartSend").addEventListener("click", function(e){
-  if(upsellDismissed || cartHasBebida()) return;
-  const bebidas = MENU.filter(item => item.cat === "bebidas" && !item.paused);
-  if(!bebidas.length) return;
-  e.preventDefault();
-  document.getElementById("upsellDrinksList").innerHTML = bebidas.map(b => `
+function buildUpsellQueue(){
+  return UPSELL_CATEGORY_SLUGS.filter(slug => {
+    const available = MENU.some(item => item.cat === slug && !item.paused);
+    return available && !cartHasCategory(slug);
+  });
+}
+
+function upsellCopy(slug){
+  const cat = CATEGORIES.find(c => c.slug === slug);
+  const label = (cat ? cat.label : slug).toLowerCase();
+  const icon = (cat && cat.icon) ? cat.icon : "🍽️";
+  return {
+    title: `${icon} ¿Le sumás ${label}?`,
+    subtitle: `Todavía no agregaste nada de ${label}. Elegí uno y lo sumamos al pedido.`
+  };
+}
+
+function showUpsellStep(slug){
+  const items = MENU.filter(item => item.cat === slug && !item.paused);
+  const copy = upsellCopy(slug);
+  document.getElementById("upsellTitle").textContent = copy.title;
+  document.getElementById("upsellSubtitle").textContent = copy.subtitle;
+  document.getElementById("upsellDrinksList").innerHTML = items.map(b => `
     <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--charcoal-2);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:10px 14px;">
-      <span style="font-size:13.5px;font-weight:600;">${b.icon||"🥤"} ${escapeHtml(b.name)} <span style="color:var(--gold);font-weight:700;">${money(b.price)}</span></span>
+      <span style="font-size:13.5px;font-weight:600;">${b.icon||"🍽️"} ${escapeHtml(b.name)} <span style="color:var(--gold);font-weight:700;">${money(b.price)}</span></span>
       <button class="btn btn-gold" style="width:auto;padding:8px 16px;font-size:12.5px;" data-id="${b.id}">+ Agregar</button>
     </div>
   `).join("");
   document.getElementById("upsellOverlay").classList.add("open");
+}
+
+function advanceUpsellQueue(){
+  if(upsellQueue.length){
+    showUpsellStep(upsellQueue.shift());
+  } else {
+    upsellDismissed = true;
+    document.getElementById("upsellOverlay").classList.remove("open");
+    window.open(document.getElementById("cartSend").href, "_blank");
+  }
+}
+
+document.getElementById("cartSend").addEventListener("click", function(e){
+  if(upsellDismissed) return;
+  upsellQueue = buildUpsellQueue();
+  if(!upsellQueue.length) return;
+  e.preventDefault();
+  showUpsellStep(upsellQueue.shift());
 });
 
 document.getElementById("upsellDrinksList").addEventListener("click", e => {
@@ -1644,14 +1681,12 @@ document.getElementById("upsellDrinksList").addEventListener("click", e => {
   if(!btn) return;
   addToCart(btn.dataset.id, btn);
   setTimeout(() => {
-    document.getElementById("upsellOverlay").classList.remove("open");
+    advanceUpsellQueue();
   }, 500);
 });
 
 document.getElementById("upsellSkipBtn").addEventListener("click", () => {
-  upsellDismissed = true;
-  document.getElementById("upsellOverlay").classList.remove("open");
-  window.open(document.getElementById("cartSend").href, "_blank");
+  advanceUpsellQueue();
 });
 
 document.getElementById("upsellClose").addEventListener("click", () => {
