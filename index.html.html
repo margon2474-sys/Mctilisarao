@@ -596,12 +596,18 @@ footer{background:var(--charcoal-2);padding:70px 0 26px;border-top:1px solid rgb
 .cart-items{flex:1;overflow-y:auto;padding:20px 26px;}
 .cart-empty{text-align:center;color:var(--muted);padding:60px 20px;font-size:14px;}
 .cart-empty span{font-size:44px;display:block;margin-bottom:16px;}
-.cart-row{display:flex;align-items:center;gap:14px;padding:16px 0;border-bottom:1px solid rgba(255,255,255,.06);}
+.cart-row{padding:16px 0;border-bottom:1px solid rgba(255,255,255,.06);}
+.cart-row-top{display:flex;align-items:center;gap:14px;}
 .cart-row .em{font-size:30px;width:44px;text-align:center;}
 .cart-row-info{flex:1;}
 .cart-row-info b{font-size:14px;font-weight:600;display:block;margin-bottom:3px;}
 .cart-row-info span{font-size:12.5px;color:var(--gold);font-weight:700;}
 .cart-qty{display:flex;align-items:center;gap:10px;}
+.cart-note-input{
+  width:100%;margin-top:10px;background:var(--charcoal-2);border:1px solid rgba(255,255,255,.08);
+  border-radius:8px;padding:8px 12px;font-size:12.5px;color:var(--white);
+}
+.cart-note-input::placeholder{color:var(--muted);}
 .cart-qty button{
   width:26px;height:26px;border-radius:50%;background:rgba(255,255,255,.08);
   display:flex;align-items:center;justify-content:center;font-size:14px;color:#fff;transition:background .3s;
@@ -1649,6 +1655,7 @@ function loadLogoIntoAdmin(){
 
 /* ============ CART ============ */
 let cart = {};
+let cartNotes = {}; // aclaraciones por línea del carrito (ej: "sin cebolla")
 
 /* Las claves del carrito son "id" para productos simples, o "id__Variante" para
    productos con variante (ej: "42__Doble"), así cada variante se cuenta aparte. */
@@ -1698,7 +1705,10 @@ function addToCart(id, btn){
 
 function changeQty(key, delta){
   cart[key] = (cart[key] || 0) + delta;
-  if(cart[key] <= 0) delete cart[key];
+  if(cart[key] <= 0){
+    delete cart[key];
+    delete cartNotes[key];
+  }
   updateCartUI();
 }
 
@@ -1724,30 +1734,47 @@ function updateCartUI(){
     if(!line) return "";
     const qty = cart[key];
     total += line.price * qty;
+    const noteVal = (cartNotes[key] || "").replace(/"/g,"&quot;");
     return `
       <div class="cart-row">
-        <div class="em">${line.item.icon || "🍔"}</div>
-        <div class="cart-row-info">
-          <b>${escapeHtml(line.displayName)}</b>
-          <span>${money(line.price)}</span>
+        <div class="cart-row-top">
+          <div class="em">${line.item.icon || "🍔"}</div>
+          <div class="cart-row-info">
+            <b>${escapeHtml(line.displayName)}</b>
+            <span>${money(line.price)}</span>
+          </div>
+          <div class="cart-qty">
+            <button onclick="changeQty('${key}',-1)">−</button>
+            <span>${qty}</span>
+            <button onclick="changeQty('${key}',1)">+</button>
+          </div>
         </div>
-        <div class="cart-qty">
-          <button onclick="changeQty('${key}',-1)">−</button>
-          <span>${qty}</span>
-          <button onclick="changeQty('${key}',1)">+</button>
-        </div>
+        <input type="text" class="cart-note-input" data-role="cartNote" data-key="${key}" value="${noteVal}" placeholder="Aclaraciones (ej: sin cebolla)" maxlength="120">
       </div>
     `;
   }).join("");
 
   footer.style.display = "block";
   document.getElementById("cartTotal").textContent = money(total);
+  updateCartSendLink();
+}
 
+document.getElementById("cartItems").addEventListener("input", e => {
+  if(e.target.dataset.role !== "cartNote") return;
+  cartNotes[e.target.dataset.key] = e.target.value;
+  updateCartSendLink();
+});
+
+function updateCartSendLink(){
   let msg = "Hola MC Tili! 👋 Quiero hacer este pedido:%0A%0A";
-  ids.forEach(key => {
+  let total = 0;
+  Object.keys(cart).forEach(key => {
     const line = cartLineInfo(key);
     if(!line) return;
-    msg += `• ${cart[key]}x ${line.displayName} — ${money(line.price * cart[key])}%0A`;
+    total += line.price * cart[key];
+    const note = (cartNotes[key] || "").trim();
+    const noteTxt = note ? ` (${note.replace(/\n/g," ")})` : "";
+    msg += `• ${cart[key]}x ${line.displayName}${noteTxt} — ${money(line.price * cart[key])}%0A`;
   });
   msg += `%0A*Total: ${money(total)}*%0A%0AMi nombre es: `;
   document.getElementById("cartSend").href = `https://wa.me/${WA_NUMBER}?text=${msg}`;
