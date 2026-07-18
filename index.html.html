@@ -404,6 +404,37 @@ section{padding:64px 0;position:relative;}
 .add-btn:hover{background:var(--red-dark);transform:scale(1.05);}
 .add-btn.added{background:#25D366;}
 
+/* --- Tarjetas con variantes (Simple/Doble, Media/Completa) --- */
+.v-card-head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:2px;}
+.v-card-head h4{margin-bottom:0;flex:1;}
+.v-card-pricebox{text-align:right;flex-shrink:0;}
+.v-card-price{display:block;font-size:19px;font-weight:900;color:var(--gold);line-height:1.1;}
+.v-card-tag{display:block;font-size:9.5px;font-weight:800;letter-spacing:.06em;color:var(--muted);margin-top:2px;}
+.variant-toggle-group{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:12px 0 16px;}
+.variant-opt-btn{
+  background:var(--charcoal-2);border:1.5px solid rgba(255,255,255,.1);border-radius:10px;
+  padding:9px 6px;text-align:center;cursor:pointer;transition:all .25s var(--ease);
+}
+.variant-opt-btn b{display:block;font-size:12.5px;font-weight:700;color:var(--white);}
+.variant-opt-btn span{display:block;font-size:11.5px;color:var(--muted);margin-top:2px;}
+.variant-opt-btn.active{background:var(--red);border-color:var(--red);}
+.variant-opt-btn.active b, .variant-opt-btn.active span{color:#fff;}
+.variant-foot{gap:10px;}
+.qty-stepper{
+  display:flex;align-items:center;gap:12px;background:var(--charcoal-2);
+  border:1px solid rgba(255,255,255,.1);border-radius:100px;padding:6px 14px;flex-shrink:0;
+}
+.qty-stepper button{font-size:15px;font-weight:800;color:var(--white);width:18px;text-align:center;}
+.qty-stepper span{font-size:13.5px;font-weight:700;min-width:14px;text-align:center;}
+.variant-foot .add-btn{flex:1;justify-content:center;}
+.variants-editor{grid-column:1/-1;background:rgba(255,255,255,.03);border-radius:10px;padding:12px;margin-top:8px;display:none;}
+.variants-editor.open{display:block;}
+.variant-edit-row{display:flex;gap:8px;margin-bottom:8px;align-items:center;}
+.variant-edit-row input[type="text"]{flex:1.2;}
+.variant-edit-row input[type="number"]{flex:1;}
+.variant-edit-row button{background:var(--red);color:#fff;border-radius:8px;padding:6px 10px;font-size:12px;}
+.variant-toggle-btn{grid-column:1/-1;width:fit-content;font-size:11.5px;padding:8px 14px;margin-top:6px;}
+
 /* ============ GALLERY ============ */
 .gallery-grid{
   display:grid;grid-template-columns:repeat(6,1fr);grid-auto-rows:130px;gap:14px;
@@ -1174,7 +1205,13 @@ a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visib
         </div>
       </div>
       <div class="field"><label>Descripción</label><textarea id="newItemDesc" placeholder="Descripción del producto"></textarea></div>
-      <div class="field"><label>Precio ($)</label><input type="number" id="newItemPrice" placeholder="Ej: 6500"></div>
+      <div class="field" id="newItemPriceField"><label>Precio ($)</label><input type="number" id="newItemPrice" placeholder="Ej: 6500"></div>
+      <div class="field"><label class="admin-flag" style="font-size:13px;"><input type="checkbox" id="newItemHasVariants"> Tiene variantes (ej: Simple/Doble, Media/Completa)</label></div>
+      <div class="field" id="newItemVariantsWrap" style="display:none;">
+        <label>Variantes y precios</label>
+        <div id="newItemVariantsList"></div>
+        <button type="button" class="btn btn-outline" id="newItemAddVariantBtn" style="width:auto;padding:8px 16px;font-size:12.5px;margin-top:4px;">+ Agregar variante</button>
+      </div>
       <div class="field"><label class="admin-flag" style="font-size:13px;"><input type="checkbox" id="newItemIsNew"> Marcar como Novedad</label></div>
       <button class="btn btn-gold" id="addNewItemBtn">➕ Agregar al menú</button>
     </div>
@@ -1354,21 +1391,87 @@ function menuItemImgHtml(item){
 }
 
 function menuCardHtml(item){
+  const hasVariants = item.variants && item.variants.length;
+
+  if(!hasVariants){
+    return `
+      <div class="menu-item show" data-cat="${item.cat}">
+        ${item.isNew ? '<span class="new-badge">¡Nuevo!</span>' : ""}
+        <div class="menu-item-img">${menuItemImgHtml(item)}</div>
+        <div class="menu-item-body">
+          <h4>${escapeHtml(item.name)}</h4>
+          <p>${escapeHtml(item.desc)}</p>
+          <div class="menu-item-foot">
+            <span class="menu-price">${money(item.price)}</span>
+            <button class="add-btn" data-id="${item.id}" onclick="addToCart('${item.id}', this)">+ Agregar</button>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  const first = item.variants[0];
   return `
     <div class="menu-item show" data-cat="${item.cat}">
       ${item.isNew ? '<span class="new-badge">¡Nuevo!</span>' : ""}
       <div class="menu-item-img">${menuItemImgHtml(item)}</div>
       <div class="menu-item-body">
-        <h4>${escapeHtml(item.name)}</h4>
+        <div class="v-card-head">
+          <h4>${escapeHtml(item.name)}</h4>
+          <div class="v-card-pricebox">
+            <span class="v-card-price" data-role="variant-price">${money(first.price)}</span>
+            <span class="v-card-tag" data-role="variant-tag">${escapeHtml(first.label.toUpperCase())}</span>
+          </div>
+        </div>
         <p>${escapeHtml(item.desc)}</p>
-        <div class="menu-item-foot">
-          <span class="menu-price">${money(item.price)}</span>
-          <button class="add-btn" data-id="${item.id}" onclick="addToCart('${item.id}', this)">+ Agregar</button>
+        <div class="variant-toggle-group">
+          ${item.variants.map((v,i) => `
+            <div class="variant-opt-btn${i===0?" active":""}" data-label="${escapeHtml(v.label)}" data-price="${v.price}">
+              <b>${escapeHtml(v.label)}</b><span>${money(v.price)}</span>
+            </div>
+          `).join("")}
+        </div>
+        <div class="menu-item-foot variant-foot">
+          <div class="qty-stepper">
+            <button type="button" data-role="qtyMinus">−</button>
+            <span data-role="qtyVal">0</span>
+            <button type="button" data-role="qtyPlus">+</button>
+          </div>
+          <button class="add-btn" data-id="${item.id}" data-variant="${escapeHtml(first.label)}" onclick="addToCart('${item.id}', this)">+ Agregar</button>
         </div>
       </div>
     </div>
   `;
 }
+
+/* Selección de variante y stepper de cantidad (Simple/Doble, Media/Completa, etc.) */
+document.addEventListener("click", e => {
+  const opt = e.target.closest(".variant-opt-btn");
+  if(opt){
+    const card = opt.closest(".menu-item");
+    if(!card) return;
+    card.querySelectorAll(".variant-opt-btn").forEach(c => c.classList.remove("active"));
+    opt.classList.add("active");
+    const priceEl = card.querySelector('[data-role="variant-price"]');
+    const tagEl = card.querySelector('[data-role="variant-tag"]');
+    if(priceEl) priceEl.textContent = money(Number(opt.dataset.price));
+    if(tagEl) tagEl.textContent = opt.dataset.label.toUpperCase();
+    const addBtn = card.querySelector(".add-btn");
+    if(addBtn) addBtn.dataset.variant = opt.dataset.label;
+    return;
+  }
+
+  const stepBtn = e.target.closest("[data-role='qtyMinus'], [data-role='qtyPlus']");
+  if(stepBtn){
+    const card = stepBtn.closest(".menu-item");
+    const valEl = card ? card.querySelector('[data-role="qtyVal"]') : null;
+    if(!valEl) return;
+    let val = Number(valEl.textContent) || 0;
+    val += stepBtn.dataset.role === "qtyPlus" ? 1 : -1;
+    if(val < 0) val = 0;
+    valEl.textContent = val;
+  }
+});
 
 function renderMenu(){
   const grid = document.getElementById("menuGrid");
@@ -1547,8 +1650,43 @@ function loadLogoIntoAdmin(){
 /* ============ CART ============ */
 let cart = {};
 
+/* Las claves del carrito son "id" para productos simples, o "id__Variante" para
+   productos con variante (ej: "42__Doble"), así cada variante se cuenta aparte. */
+function cartKey(id, variantLabel){
+  return variantLabel ? `${id}__${variantLabel}` : String(id);
+}
+function parseCartKey(key){
+  const idx = key.indexOf("__");
+  if(idx === -1) return {id:key, variantLabel:null};
+  return {id:key.slice(0,idx), variantLabel:key.slice(idx+2)};
+}
+function cartLineInfo(key){
+  const {id, variantLabel} = parseCartKey(key);
+  const item = MENU.find(m => String(m.id) === String(id));
+  if(!item) return null;
+  let price = item.price;
+  let displayName = item.name;
+  if(variantLabel && item.variants){
+    const v = item.variants.find(v => v.label === variantLabel);
+    if(v){ price = v.price; displayName = `${item.name} (${variantLabel})`; }
+  }
+  return {item, price, displayName, variantLabel};
+}
+
 function addToCart(id, btn){
-  cart[id] = (cart[id] || 0) + 1;
+  const variantLabel = btn && btn.dataset.variant ? btn.dataset.variant : null;
+  const key = cartKey(id, variantLabel);
+
+  let addQty = 1;
+  const card = btn ? btn.closest(".menu-item") : null;
+  const qtyEl = card ? card.querySelector('[data-role="qtyVal"]') : null;
+  if(qtyEl){
+    addQty = Number(qtyEl.textContent) || 0;
+    if(addQty <= 0) addQty = 1;
+    qtyEl.textContent = "0";
+  }
+
+  cart[key] = (cart[key] || 0) + addQty;
   updateCartUI();
   showToast("Agregado al pedido ✓");
   if(btn){
@@ -1558,9 +1696,9 @@ function addToCart(id, btn){
   }
 }
 
-function changeQty(id, delta){
-  cart[id] = (cart[id] || 0) + delta;
-  if(cart[id] <= 0) delete cart[id];
+function changeQty(key, delta){
+  cart[key] = (cart[key] || 0) + delta;
+  if(cart[key] <= 0) delete cart[key];
   updateCartUI();
 }
 
@@ -1581,22 +1719,22 @@ function updateCartUI(){
   }
 
   let total = 0;
-  itemsWrap.innerHTML = ids.map(id => {
-    const item = MENU.find(m => String(m.id) === String(id));
-    if(!item) return "";
-    const qty = cart[id];
-    total += item.price * qty;
+  itemsWrap.innerHTML = ids.map(key => {
+    const line = cartLineInfo(key);
+    if(!line) return "";
+    const qty = cart[key];
+    total += line.price * qty;
     return `
       <div class="cart-row">
-        <div class="em">${item.icon || "🍔"}</div>
+        <div class="em">${line.item.icon || "🍔"}</div>
         <div class="cart-row-info">
-          <b>${escapeHtml(item.name)}</b>
-          <span>${money(item.price)}</span>
+          <b>${escapeHtml(line.displayName)}</b>
+          <span>${money(line.price)}</span>
         </div>
         <div class="cart-qty">
-          <button onclick="changeQty('${id}',-1)">−</button>
+          <button onclick="changeQty('${key}',-1)">−</button>
           <span>${qty}</span>
-          <button onclick="changeQty('${id}',1)">+</button>
+          <button onclick="changeQty('${key}',1)">+</button>
         </div>
       </div>
     `;
@@ -1606,10 +1744,10 @@ function updateCartUI(){
   document.getElementById("cartTotal").textContent = money(total);
 
   let msg = "Hola MC Tili! 👋 Quiero hacer este pedido:%0A%0A";
-  ids.forEach(id => {
-    const item = MENU.find(m => String(m.id) === String(id));
-    if(!item) return;
-    msg += `• ${cart[id]}x ${item.name} — ${money(item.price * cart[id])}%0A`;
+  ids.forEach(key => {
+    const line = cartLineInfo(key);
+    if(!line) return;
+    msg += `• ${cart[key]}x ${line.displayName} — ${money(line.price * cart[key])}%0A`;
   });
   msg += `%0A*Total: ${money(total)}*%0A%0AMi nombre es: `;
   document.getElementById("cartSend").href = `https://wa.me/${WA_NUMBER}?text=${msg}`;
@@ -1621,7 +1759,8 @@ let upsellDismissed = false;
 let upsellQueue = [];
 
 function cartHasCategory(slug){
-  return Object.keys(cart).some(id => {
+  return Object.keys(cart).some(key => {
+    const {id} = parseCartKey(key);
     const item = MENU.find(m => String(m.id) === String(id));
     return item && item.cat === slug;
   });
@@ -1924,7 +2063,7 @@ async function initData(){
       ]);
 
       MENU = (!menuRes.error && Array.isArray(menuRes.data))
-        ? menuRes.data.map(r => ({id:r.id, name:r.name, desc:r.description, price:r.price, cat:r.category, icon:r.icon||"🍔", img:r.image_url, isNew:r.is_new, paused:r.is_paused}))
+        ? menuRes.data.map(r => ({id:r.id, name:r.name, desc:r.description, price:r.price, cat:r.category, icon:r.icon||"🍔", img:r.image_url, isNew:r.is_new, paused:r.is_paused, variants:r.variants||null}))
         : (cached && cached.MENU) || [...FALLBACK_MENU];
 
       let featuredIds = [];
@@ -2114,6 +2253,17 @@ function renderAdminMenuList(){
       </div>
       <button class="del-btn" data-role="del">Eliminar</button>
       <input type="file" accept="image/*" data-role="fileInput" style="display:none;">
+      <button type="button" class="btn btn-outline variant-toggle-btn" data-role="toggleVariants">🍟 Variantes${item.variants && item.variants.length ? ` (${item.variants.length})` : ""}</button>
+      <div class="variants-editor" data-role="variantsEditor">
+        ${(item.variants||[]).map((v,vi) => `
+          <div class="variant-edit-row" data-vi="${vi}">
+            <input type="text" data-role="variantLabel" value="${(v.label||"").replace(/"/g,'&quot;')}" placeholder="Ej: Simple">
+            <input type="number" data-role="variantPrice" value="${v.price}" placeholder="Precio">
+            <button type="button" data-role="delVariant">✕</button>
+          </div>
+        `).join("")}
+        <button type="button" class="btn btn-outline" data-role="addVariant" style="width:auto;padding:8px 16px;font-size:12.5px;">+ Agregar variante</button>
+      </div>
     </div>
   `;
   }).join("");
@@ -2153,6 +2303,21 @@ document.getElementById("adminMenuList").addEventListener("click", e => {
   }
   if(e.target.dataset.role === "down"){
     moveMenuItem(idx, 1);
+  }
+  if(e.target.dataset.role === "toggleVariants"){
+    row.querySelector('[data-role="variantsEditor"]').classList.toggle("open");
+  }
+  if(e.target.dataset.role === "addVariant"){
+    if(!MENU[idx].variants) MENU[idx].variants = [];
+    MENU[idx].variants.push({label:"", price:0});
+    renderAdminMenuList();
+    document.querySelector(`.admin-item-row[data-idx="${idx}"] [data-role="variantsEditor"]`)?.classList.add("open");
+  }
+  if(e.target.dataset.role === "delVariant"){
+    const vi = Number(e.target.closest(".variant-edit-row").dataset.vi);
+    MENU[idx].variants.splice(vi, 1);
+    renderAdminMenuList();
+    document.querySelector(`.admin-item-row[data-idx="${idx}"] [data-role="variantsEditor"]`)?.classList.add("open");
   }
 });
 
@@ -2274,6 +2439,11 @@ document.getElementById("adminMenuList").addEventListener("change", e => {
   if(role === "desc") MENU[idx].desc = e.target.value;
   if(role === "price") MENU[idx].price = Number(e.target.value) || 0;
   if(role === "cat") MENU[idx].cat = e.target.value.trim();
+  if(role === "variantLabel" || role === "variantPrice"){
+    const vi = Number(e.target.closest(".variant-edit-row").dataset.vi);
+    if(role === "variantLabel") MENU[idx].variants[vi].label = e.target.value;
+    if(role === "variantPrice") MENU[idx].variants[vi].price = Number(e.target.value) || 0;
+  }
   if(role === "isNew") MENU[idx].isNew = e.target.checked;
   if(role === "featured") MENU[idx].featured = e.target.checked;
   if(role === "paused"){
@@ -2288,9 +2458,15 @@ document.getElementById("adminSaveBtn").addEventListener("click", function(){
       for(let i=0;i<MENU.length;i++){
         const item = MENU[i];
         if(!item.id) continue;
+        const cleanVariants = (item.variants || [])
+          .map(v => ({label:(v.label||"").trim(), price:Number(v.price) || 0}))
+          .filter(v => v.label && v.price > 0);
+        item.variants = cleanVariants.length ? cleanVariants : null;
+        if(item.variants) item.price = Math.min(...item.variants.map(v => v.price));
         const {error} = await sb.from("menu_items").update({
           name:item.name, description:item.desc, price:item.price, category:item.cat,
-          image_url:item.img || null, is_new: !!item.isNew, is_paused: !!item.paused, sort_order:i
+          image_url:item.img || null, is_new: !!item.isNew, is_paused: !!item.paused, sort_order:i,
+          variants:item.variants
         }).eq("id", item.id);
         if(error) throw error;
       }
@@ -2314,13 +2490,68 @@ document.getElementById("newItemImgInput").addEventListener("change", e => {
   }).catch(() => showToast("No se pudo procesar la imagen, probá con otra foto"));
 });
 
+/* --- Variantes en "Agregar producto" (ej: Simple/Doble, Media/Completa) --- */
+let newItemVariants = [{label:"", price:""}, {label:"", price:""}];
+
+function renderNewItemVariants(){
+  const wrap = document.getElementById("newItemVariantsList");
+  wrap.innerHTML = newItemVariants.map((v, i) => `
+    <div class="variant-edit-row" data-vi="${i}">
+      <input type="text" data-role="niVariantLabel" value="${(v.label||"").replace(/"/g,'&quot;')}" placeholder="Ej: Simple">
+      <input type="number" data-role="niVariantPrice" value="${v.price}" placeholder="Precio">
+      ${newItemVariants.length > 2 ? `<button type="button" data-role="niDelVariant">✕</button>` : ""}
+    </div>
+  `).join("");
+}
+
+document.getElementById("newItemHasVariants").addEventListener("change", e => {
+  const on = e.target.checked;
+  document.getElementById("newItemVariantsWrap").style.display = on ? "block" : "none";
+  document.getElementById("newItemPriceField").style.display = on ? "none" : "block";
+  if(on) renderNewItemVariants();
+});
+
+document.getElementById("newItemAddVariantBtn").addEventListener("click", () => {
+  newItemVariants.push({label:"", price:""});
+  renderNewItemVariants();
+});
+
+document.getElementById("newItemVariantsList").addEventListener("input", e => {
+  const row = e.target.closest(".variant-edit-row");
+  if(!row) return;
+  const i = Number(row.dataset.vi);
+  if(e.target.dataset.role === "niVariantLabel") newItemVariants[i].label = e.target.value;
+  if(e.target.dataset.role === "niVariantPrice") newItemVariants[i].price = Number(e.target.value) || 0;
+});
+
+document.getElementById("newItemVariantsList").addEventListener("click", e => {
+  if(e.target.dataset.role !== "niDelVariant") return;
+  const row = e.target.closest(".variant-edit-row");
+  newItemVariants.splice(Number(row.dataset.vi), 1);
+  renderNewItemVariants();
+});
+
 document.getElementById("addNewItemBtn").addEventListener("click", async function(){
   if(this.disabled) return;
   const name = document.getElementById("newItemName").value.trim();
   const cat = document.getElementById("newItemCat").value;
   const desc = document.getElementById("newItemDesc").value.trim();
-  const price = Number(document.getElementById("newItemPrice").value) || 0;
+  const hasVariants = document.getElementById("newItemHasVariants").checked;
   const isNew = document.getElementById("newItemIsNew").checked;
+
+  let price = Number(document.getElementById("newItemPrice").value) || 0;
+  let variants = null;
+  if(hasVariants){
+    variants = newItemVariants
+      .map(v => ({label:(v.label||"").trim(), price:Number(v.price) || 0}))
+      .filter(v => v.label && v.price > 0);
+    if(variants.length < 2){
+      showToast("Completá al menos 2 variantes con nombre y precio");
+      return;
+    }
+    price = Math.min(...variants.map(v => v.price));
+  }
+
   if(!name || !price){
     showToast("Completá al menos nombre y precio");
     return;
@@ -2331,14 +2562,14 @@ document.getElementById("addNewItemBtn").addEventListener("click", async functio
   const originalText = this.textContent;
   this.textContent = "Agregando...";
 
-  const newItem = {cat, icon:"🍔", name, desc, price, isNew, paused:false};
+  const newItem = {cat, icon:"🍔", name, desc, price, isNew, paused:false, variants};
   if(newItemImgData) newItem.img = newItemImgData;
 
   try{
     if(sb){
       const {data, error} = await sb.from("menu_items").insert({
         name, description:desc, price, category:cat, icon:"🍔",
-        image_url:newItemImgData || null, is_new:isNew, is_paused:false
+        image_url:newItemImgData || null, is_new:isNew, is_paused:false, variants
       }).select().single();
       if(!error && data) newItem.id = data.id;
     } else {
@@ -2355,6 +2586,10 @@ document.getElementById("addNewItemBtn").addEventListener("click", async functio
     document.getElementById("newItemDesc").value = "";
     document.getElementById("newItemPrice").value = "";
     document.getElementById("newItemIsNew").checked = false;
+    document.getElementById("newItemHasVariants").checked = false;
+    document.getElementById("newItemVariantsWrap").style.display = "none";
+    document.getElementById("newItemPriceField").style.display = "block";
+    newItemVariants = [{label:"", price:""}, {label:"", price:""}];
     newItemImgData = null;
     newItemThumb.innerHTML = "🍔";
     document.getElementById("newItemImgInput").value = "";
