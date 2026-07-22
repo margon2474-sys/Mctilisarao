@@ -1852,9 +1852,10 @@ function advanceUpsellQueue(){
   }
 }
 
-/* Descuenta stock (para los productos que lo tengan trackeado) y recién
-   después abre WhatsApp con el pedido. Si Supabase no está disponible o
-   falla, igual abre WhatsApp — nunca bloquea el envío del pedido. */
+/* Descuenta stock (para los productos que lo tengan trackeado), crea la
+   comanda automática en la gestión, y recién después abre WhatsApp con el
+   pedido. Si Supabase no está disponible o algo falla, igual abre
+   WhatsApp — nunca bloquea el envío del pedido. */
 let sendingOrder = false;
 async function finalizeAndSendOrder(){
   if(sendingOrder) return;
@@ -1864,15 +1865,31 @@ async function finalizeAndSendOrder(){
   if(sb){
     const lines = Object.keys(cart).map(key => {
       const line = cartLineInfo(key);
-      return line ? {id: line.item.id, qty: cart[key], stock: line.item.stock} : null;
-    }).filter(l => l && l.stock !== null && l.stock !== undefined);
-    if(lines.length){
+      if(!line) return null;
+      return {
+        id: line.item.id, qty: cart[key], stock: line.item.stock,
+        name: line.displayName, price: line.price, note: (cartNotes[key]||"").trim()
+      };
+    }).filter(Boolean);
+
+    const stockLines = lines.filter(l => l.stock !== null && l.stock !== undefined);
+    if(stockLines.length){
       try{
-        await Promise.all(lines.map(l =>
+        await Promise.all(stockLines.map(l =>
           sb.rpc("descontar_stock_menu_item", {p_id: l.id, p_cantidad: l.qty})
         ));
       }catch(err){
         console.error("No se pudo descontar el stock, se envía el pedido igual:", err);
+      }
+    }
+
+    if(lines.length){
+      const total = lines.reduce((sum,l) => sum + l.price*l.qty, 0);
+      const items = lines.map(l => ({name:l.name, qty:l.qty, price:l.price, note:l.note}));
+      try{
+        await sb.from("pedidos_web").insert({items, total, estado:"pendiente"});
+      }catch(err){
+        console.error("No se pudo crear la comanda automática, se envía el pedido igual:", err);
       }
     }
   }
