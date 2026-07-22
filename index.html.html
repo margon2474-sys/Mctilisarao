@@ -1399,17 +1399,20 @@ function menuItemImgHtml(item){
 function menuCardHtml(item){
   const hasVariants = item.variants && item.variants.length;
 
+  const soldOut = item.stock !== null && item.stock !== undefined && item.stock <= 0;
+
   if(!hasVariants){
     return `
       <div class="menu-item show" data-cat="${item.cat}">
         ${item.isNew ? '<span class="new-badge">¡Nuevo!</span>' : ""}
+        ${soldOut ? '<span class="new-badge" style="background:var(--muted, #888);">Agotado</span>' : ""}
         <div class="menu-item-img">${menuItemImgHtml(item)}</div>
         <div class="menu-item-body">
           <h4>${escapeHtml(item.name)}</h4>
           <p>${escapeHtml(item.desc)}</p>
           <div class="menu-item-foot">
             <span class="menu-price">${money(item.price)}</span>
-            <button class="add-btn" data-id="${item.id}" onclick="addToCart('${item.id}', this)">+ Agregar</button>
+            <button class="add-btn" data-id="${item.id}" onclick="addToCart('${item.id}', this)" ${soldOut ? "disabled" : ""}>${soldOut ? "Agotado" : "+ Agregar"}</button>
           </div>
         </div>
       </div>
@@ -1420,6 +1423,7 @@ function menuCardHtml(item){
   return `
     <div class="menu-item show" data-cat="${item.cat}">
       ${item.isNew ? '<span class="new-badge">¡Nuevo!</span>' : ""}
+      ${soldOut ? '<span class="new-badge" style="background:var(--muted, #888);">Agotado</span>' : ""}
       <div class="menu-item-img">${menuItemImgHtml(item)}</div>
       <div class="menu-item-body">
         <div class="v-card-head">
@@ -1443,7 +1447,7 @@ function menuCardHtml(item){
             <span data-role="qtyVal">0</span>
             <button type="button" data-role="qtyPlus">+</button>
           </div>
-          <button class="add-btn" data-id="${item.id}" data-variant="${escapeHtml(first.label)}" onclick="addToCart('${item.id}', this)">+ Agregar</button>
+          <button class="add-btn" data-id="${item.id}" data-variant="${escapeHtml(first.label)}" onclick="addToCart('${item.id}', this)" ${soldOut ? "disabled" : ""}>${soldOut ? "Agotado" : "+ Agregar"}</button>
         </div>
       </div>
     </div>
@@ -1693,6 +1697,20 @@ function addToCart(id, btn){
     qtyEl.textContent = "0";
   }
 
+  const menuItem = MENU.find(m => String(m.id) === String(id));
+  if(menuItem && menuItem.stock !== null && menuItem.stock !== undefined){
+    const already = cart[key] || 0;
+    const remaining = menuItem.stock - already;
+    if(remaining <= 0){
+      showToast(`Ya agregaste todo el stock disponible de "${menuItem.name}"`);
+      return;
+    }
+    if(addQty > remaining){
+      addQty = remaining;
+      showToast(`Solo quedan ${remaining} de "${menuItem.name}"`);
+    }
+  }
+
   cart[key] = (cart[key] || 0) + addQty;
   updateCartUI();
   showToast("Agregado al pedido ✓");
@@ -1830,15 +1848,49 @@ function advanceUpsellQueue(){
   } else {
     upsellDismissed = true;
     document.getElementById("upsellOverlay").classList.remove("open");
-    window.open(document.getElementById("cartSend").href, "_blank");
+    finalizeAndSendOrder();
   }
 }
 
+/* Descuenta stock (para los productos que lo tengan trackeado) y recién
+   después abre WhatsApp con el pedido. Si Supabase no está disponible o
+   falla, igual abre WhatsApp — nunca bloquea el envío del pedido. */
+let sendingOrder = false;
+async function finalizeAndSendOrder(){
+  if(sendingOrder) return;
+  sendingOrder = true;
+  const sendBtn = document.getElementById("cartSend");
+  const href = sendBtn.href;
+  if(sb){
+    const lines = Object.keys(cart).map(key => {
+      const line = cartLineInfo(key);
+      return line ? {id: line.item.id, qty: cart[key], stock: line.item.stock} : null;
+    }).filter(l => l && l.stock !== null && l.stock !== undefined);
+    if(lines.length){
+      try{
+        await Promise.all(lines.map(l =>
+          sb.rpc("descontar_stock_menu_item", {p_id: l.id, p_cantidad: l.qty})
+        ));
+      }catch(err){
+        console.error("No se pudo descontar el stock, se envía el pedido igual:", err);
+      }
+    }
+  }
+  window.open(href, "_blank");
+  sendingOrder = false;
+}
+
 document.getElementById("cartSend").addEventListener("click", function(e){
-  if(upsellDismissed) return;
-  upsellQueue = buildUpsellQueue();
-  if(!upsellQueue.length) return;
   e.preventDefault();
+  if(upsellDismissed){
+    finalizeAndSendOrder();
+    return;
+  }
+  upsellQueue = buildUpsellQueue();
+  if(!upsellQueue.length){
+    finalizeAndSendOrder();
+    return;
+  }
   showUpsellStep(upsellQueue.shift());
 });
 
@@ -2090,7 +2142,7 @@ async function initData(){
       ]);
 
       MENU = (!menuRes.error && Array.isArray(menuRes.data))
-        ? menuRes.data.map(r => ({id:r.id, name:r.name, desc:r.description, price:r.price, cat:r.category, icon:r.icon||"🍔", img:r.image_url, isNew:r.is_new, paused:r.is_paused, variants:r.variants||null}))
+        ? menuRes.data.map(r => ({id:r.id, name:r.name, desc:r.description, price:r.price, cat:r.category, icon:r.icon||"🍔", img:r.image_url, isNew:r.is_new, paused:r.is_paused, variants:r.variants||null, stock: (r.stock===undefined ? null : r.stock)}))
         : (cached && cached.MENU) || [...FALLBACK_MENU];
 
       let featuredIds = [];
@@ -2273,6 +2325,7 @@ function renderAdminMenuList(){
       </div>
       <input type="number" data-role="price" value="${item.price}" placeholder="Precio">
       <input type="text" data-role="cat" value="${item.cat}" placeholder="Categoría">
+      <input type="number" data-role="stock" value="${item.stock===null||item.stock===undefined ? '' : item.stock}" placeholder="Stock (vacío=sin límite)" min="0">
       <div style="display:flex;flex-direction:column;gap:5px;">
         <label class="admin-flag"><input type="checkbox" data-role="isNew" ${item.isNew ? "checked" : ""}> Nuevo</label>
         <label class="admin-flag"><input type="checkbox" data-role="featured" ${item.featured ? "checked" : ""}> ⭐ Destacar</label>
@@ -2466,6 +2519,7 @@ document.getElementById("adminMenuList").addEventListener("change", e => {
   if(role === "desc") MENU[idx].desc = e.target.value;
   if(role === "price") MENU[idx].price = Number(e.target.value) || 0;
   if(role === "cat") MENU[idx].cat = e.target.value.trim();
+  if(role === "stock") MENU[idx].stock = e.target.value === "" ? null : Math.max(0, Number(e.target.value) || 0);
   if(role === "variantLabel" || role === "variantPrice"){
     const vi = Number(e.target.closest(".variant-edit-row").dataset.vi);
     if(role === "variantLabel") MENU[idx].variants[vi].label = e.target.value;
@@ -2493,7 +2547,7 @@ document.getElementById("adminSaveBtn").addEventListener("click", function(){
         const {error} = await sb.from("menu_items").update({
           name:item.name, description:item.desc, price:item.price, category:item.cat,
           image_url:item.img || null, is_new: !!item.isNew, is_paused: !!item.paused, sort_order:i,
-          variants:item.variants
+          variants:item.variants, stock:item.stock
         }).eq("id", item.id);
         if(error) throw error;
       }
