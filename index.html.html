@@ -1396,10 +1396,17 @@ function menuItemImgHtml(item){
     : `<span>${item.icon || "🍔"}</span>`;
 }
 
+/* Agotado = tiene stock cargado (no null) y llegó a 0. Se trata como un
+   pausado automático: desaparece del menú solo, y en cuanto vuelva a haber
+   stock reaparece solo, sin tocar nada a mano. */
+function estaAgotado(item){
+  return item.stock !== null && item.stock !== undefined && item.stock <= 0;
+}
+
 function menuCardHtml(item){
   const hasVariants = item.variants && item.variants.length;
 
-  const soldOut = item.stock !== null && item.stock !== undefined && item.stock <= 0;
+  const soldOut = estaAgotado(item);
 
   if(!hasVariants){
     return `
@@ -1485,7 +1492,7 @@ document.addEventListener("click", e => {
 
 function renderMenu(){
   const grid = document.getElementById("menuGrid");
-  const visible = MENU.filter(item => !item.paused);
+  const visible = MENU.filter(item => !item.paused && !estaAgotado(item));
   grid.innerHTML = visible.length
     ? visible.map(menuCardHtml).join("")
     : `<p style="text-align:center;color:var(--muted);grid-column:1/-1;">Estamos actualizando el menú, ¡volvé en un rato!</p>`;
@@ -1496,7 +1503,7 @@ function renderMenu(){
 function renderFeaturedSpecialties(){
   const grid = document.getElementById("specFeaturedGrid");
   if(!grid) return;
-  const featured = MENU.filter(item => item.featured && !item.paused);
+  const featured = MENU.filter(item => item.featured && !item.paused && !estaAgotado(item));
   if(!featured.length){
     grid.style.display = "none";
     grid.style.marginBottom = "0";
@@ -1511,7 +1518,7 @@ function renderFeaturedSpecialties(){
 function renderNovedades(){
   const sec = document.getElementById("novedades");
   const grid = document.getElementById("novedadesGrid");
-  const news = MENU.filter(item => item.isNew && !item.paused);
+  const news = MENU.filter(item => item.isNew && !item.paused && !estaAgotado(item));
   if(!news.length){ sec.style.display = "none"; return; }
   sec.style.display = "block";
   grid.innerHTML = news.map(menuCardHtml).join("");
@@ -1813,7 +1820,7 @@ function cartHasCategory(slug){
 
 function buildUpsellQueue(){
   return UPSELL_CATEGORY_SLUGS.filter(slug => {
-    const available = MENU.some(item => item.cat === slug && !item.paused);
+    const available = MENU.some(item => item.cat === slug && !item.paused && !estaAgotado(item));
     return available && !cartHasCategory(slug);
   });
 }
@@ -1829,7 +1836,7 @@ function upsellCopy(slug){
 }
 
 function showUpsellStep(slug){
-  const items = MENU.filter(item => item.cat === slug && !item.paused);
+  const items = MENU.filter(item => item.cat === slug && !item.paused && !estaAgotado(item));
   const copy = upsellCopy(slug);
   document.getElementById("upsellTitle").textContent = copy.title;
   document.getElementById("upsellSubtitle").textContent = copy.subtitle;
